@@ -1,0 +1,80 @@
+#!/usr/bin/perl
+
+############################################################
+#
+# Simple assistant for use with wxPerl and PerlApp / PDK
+#
+# Copyright (c) 2006 Mark Dootson mdootson@cpan.org
+#
+############################################################
+
+package PDKHelper;
+
+=head1 NAME
+
+wxpdk
+
+=head1 VERSION
+
+Version 0.02
+
+=cut
+
+=head1 SYNOPSIS
+
+    PerlAPP / PDK assistant
+
+    At the start of your script ...
+
+    #!c:path/to/perl.exe
+    BEGIN { use Wx::Perl::Packager; }
+    .....
+
+    Then to start perlapp run 'wxpdk'
+    
+    
+=head1 DESCRIPTION
+
+    A module to assist packaging Wx based applications with PAR, 
+    ActiveState PerlApp / PDK and Perl2Exe. All that is needed is 
+    that you include a 'use' statement as the first item in your 
+    BEGIN blocks. For Perl2Exe, an additional 'use' statement 
+    outside any BEGIN block ensures correct object cleanup.
+    
+    Also provided are:
+    
+    wxpdk
+    wxpar
+        
+    which assist in packaging the wxWidgets DLLs. 
+    
+
+=cut
+
+
+
+use strict;
+use Wx;
+use Wx::Perl::Packager::PDKWindow;
+
+use base 'Wx::App';
+
+sub OnInit {
+  Wx::InitAllImageHandlers();
+  my( $this ) = shift;
+  my( $mainwindow ) = Wx::Perl::Packager::PDKWindow->new(undef, -1);
+  $mainwindow->Show(1);
+  return 1;
+}
+
+package main;
+
+my( $app ) = PDKHelper->new();
+$app->MainLoop();
+
+
+1;
+
+__END__
+
+

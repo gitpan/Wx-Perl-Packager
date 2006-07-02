@@ -1,0 +1,10 @@
+Changes
+MANIFEST
+Makefile.PL
+README
+lib/Wx/Perl/Packager.pm
+lib/Wx/Perl/Packager/PDKWindow.pm
+lib/Wx/Perl/Packager/packager.ico
+bin/wxpdk
+bin/wxpar
+META.yml                                 Module meta-data (added by MakeMaker)

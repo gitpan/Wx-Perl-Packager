@@ -1,0 +1,17 @@
+use strict;
+use warnings;
+use ExtUtils::MakeMaker;
+
+
+WriteMakefile(
+    NAME                => 'Wx::Perl::Packager',
+    AUTHOR              => 'Mark Dootson <mdootson@cpan.org>',
+    VERSION_FROM        => 'lib/Wx/Perl/Packager.pm',
+    PL_FILES            => {},
+    PREREQ_PM           => { Wx => 0.49,},
+    dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
+    clean               => { FILES => 'Wx-Perl-Packager-*' },
+    EXE_FILES           => ['bin/wxpdk', 'bin/wxpar'],
+
+);
+

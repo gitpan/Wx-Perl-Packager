@@ -1,0 +1,88 @@
+#!/usr/bin/perl
+
+############################################################
+#
+# Simple assistant for use with wxPerl and PAR
+#
+# Copyright (c) 2006 Mark Dootson mdootson@cpan.org
+#
+############################################################
+
+=head1 NAME
+
+wxpar
+
+=head1 VERSION
+
+Version 0.02
+
+=cut
+
+=head1 SYNOPSIS
+
+    PAR assistant
+
+    At the start of your script ...
+
+    #!c:path/to/perl.exe
+    BEGIN { use Wx::Perl::Packager; }
+    .....
+
+    Then to start pp run 'wxpar' exactly as you would run pp.
+    
+    e.g.  wxpar --gui --icon=myicon.ico -o myprog.exe myscript.pl
+    
+    
+=head1 DESCRIPTION
+
+    A module to assist packaging Wx based applications with PAR, 
+    ActiveState PerlApp / PDK and Perl2Exe. All that is needed is 
+    that you include a 'use' statement as the first item in your 
+    BEGIN blocks. For Perl2Exe, an additional 'use' statement 
+    outside any BEGIN block ensures correct object cleanup.
+    
+    Also provided are:
+    
+    wxpdk
+    wxpar
+        
+    which assist in packaging the wxWidgets DLLs. 
+    
+
+=cut
+
+my @args = @ARGV;
+
+require Wx::Mini;
+    
+my $wxdir = $Wx::wx_path;
+my $wxdlls = $Wx::dlls;
+
+foreach my $dllname(keys(%$wxdlls)) {
+    my $filepath = $wxdir . '/' . $wxdlls->{$dllname};
+    $filepath =~ s/\\/\//g;
+    unshift(@args, $filepath);
+    unshift(@args, '-l');
+    
+}
+
+my $command = 'pp';
+my $arglist = '';
+
+for my $argument (@args) {
+    if($argument =~ /\s/) {
+        $arglist .= '"' . $argument . '" ';
+    } else {
+        $arglist .= $argument . ' ';
+    }
+}
+
+print qq(\nRunning Command .....\n\n);
+print qq($command $arglist\n);
+print qq(\n .....\n);
+
+exec $command, $arglist;
+
+1;
+
+__END__

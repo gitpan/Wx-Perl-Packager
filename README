@@ -1,0 +1,69 @@
+#########################################################
+
+Wx-Package-Win32
+
+Version 0.07.
+
+(c)2006 Mark Dootson
+
+#########################################################
+
+Package to ease wxPerl application packaging with PAR and 
+PerlApp, PDK and Perl2Exe on MSWin32.
+Just include in BEGIN block at top of main script.
+
+BEGIN { use Wx::Package::Win32; }
+
+For Perl2Exe, add an additional use statement to
+ensure correct module clean up
+
+BEGIN { use Wx::Package::Win32; }
+use Wx::Package::Win32;
+
+PAR users are provided with a simple amended pp called
+wxperlpp (wxperlpp.bat in ../bin). This adds the
+necessary Wx DLLs in the correct place.
+
+eg run :
+wxperlpp --gui -o myapp.exe myscript.pl
+
+REQUIRES >= Perl 5.8.1
+         >= Wx   0.28
+
+
+INSTALLATION
+
+To install this module, using VC6 run the following commands
+
+    perl Makefile.PL
+    nmake
+    nmake test
+    nmake install
+
+
+SUPPORT AND DOCUMENTATION
+
+After installing, you can find documentation for this module with the perldoc command.
+
+    perldoc Wx::Package::Win32
+
+You can also look for information at:
+
+    Search CPAN
+        http://search.cpan.org/dist/Wx-Package-Win32
+
+    CPAN Request Tracker:
+        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Wx-Package-Win32
+
+    AnnoCPAN, annotated CPAN documentation:
+        http://annocpan.org/dist/Wx-Package-Win32
+
+    CPAN Ratings:
+        http://cpanratings.perl.org/d/Wx-Package-Win32
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2006 Mark Dootson
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
