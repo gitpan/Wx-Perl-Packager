@@ -2,7 +2,8 @@ package Wx::Perl::Packager::PDKWindow;
 use Wx;
 use strict;
 use base qw(Wx::Frame);
-
+use vars qw($VERSION);
+$VERSION = 0.03;
 use Wx qw(  wxVERTICAL 
             wxTOP
             wxTAB_TRAVERSAL
