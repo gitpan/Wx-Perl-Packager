@@ -9,7 +9,7 @@ our @ISA = qw(Exporter);
 
 use vars qw($VERSION $WXDLLS @LOADEDWINDLLS $RUNTIME $PACKED @PDKCHECKDLLS);
 
-$VERSION = 0.03;
+$VERSION = 0.04;
 our @EXPORT = qw();
 
 $WXDLLS = {};
@@ -22,7 +22,7 @@ Wx::Perl::Packager
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 
 =head1 SYNOPSIS
@@ -186,7 +186,7 @@ Mattia Barbon for wxPerl.
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 Mark Dootson, all rights reserved.
+Copyright 2006,2007 Mark Dootson, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

@@ -2,7 +2,7 @@
 
 Wx-Perl-Packager
 
-Version 0.03.
+Version 0.04.
 
 (c)2006 Mark Dootson
 
@@ -58,7 +58,7 @@ You can also look for information at:
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2006 Mark Dootson
+Copyright (C) 2006,2007 Mark Dootson
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

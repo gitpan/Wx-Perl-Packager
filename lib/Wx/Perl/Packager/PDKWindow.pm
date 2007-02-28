@@ -1,39 +1,9 @@
 package Wx::Perl::Packager::PDKWindow;
-use Wx;
+use Wx qw( :everything );
 use strict;
 use base qw(Wx::Frame);
 use vars qw($VERSION);
-$VERSION = 0.03;
-use Wx qw(  wxVERTICAL 
-            wxTOP
-            wxTAB_TRAVERSAL
-            wxSYSTEM_MENU
-            wxST_SIZEGRIP 
-            wxST_NO_AUTORESIZE
-            wxSIMPLE_BORDER
-            wxRIGHT
-            wxNO_BORDER 
-            wxMINIMIZE_BOX
-            wxLEFT wxHORIZONTAL
-            wxEXPAND
-            wxCLOSE_BOX
-            wxCAPTION
-            wxBOTTOM
-            wxALIGN_RIGHT 
-            wxALIGN_BOTTOM
-            wxADJUST_MINSIZE
-            wxBITMAP_TYPE_ICO 
-            wxOPEN
-            wxFILE_MUST_EXIST
-            wxCENTRE
-            wxID_CANCEL
-            wxYES_NO
-            wxICON_QUESTION
-            wxYES
-            wxOVERWRITE_PROMPT 
-            wxSAVE
-            wxOK
-            wxICON_ERROR);
+$VERSION = 0.04;
           
 use Wx::Event qw(   EVT_MENU EVT_CLOSE 
                     EVT_BUTTON );
@@ -52,10 +22,6 @@ use Win32::TieRegistry( Delimiter=>"/", qw( REG_SZ
 
 
 sub new{
-   if(not exists $_[3]){ $_[3] = 'Wx::Perl::Packager  PDK Helper';}
-   if(not exists $_[4]){ $_[4] = [0,0];}
-   if(not exists $_[5]){ $_[5] = [352,157];}
-   if(not exists $_[6]){ $_[6] = wxSIMPLE_BORDER|wxCAPTION|wxMINIMIZE_BOX|wxSYSTEM_MENU|wxCLOSE_BOX;}
    my( $this ) = shift->SUPER::new( @_ );
    $this->initBefore();
    $this->Show(0);
@@ -254,10 +220,20 @@ sub create_perlapp {
 sub get_file_name {
     my $this = shift;
     my $filepath = undef;
+    
+    my $flags;
+    
+    if ( Wx::wxVERSION() < 2.008000 ) {
+        $flags = wxOPEN|wxFILE_MUST_EXIST|wxCENTRE;
+    } else {
+        $flags = wxFD_OPEN|wxFD_FILE_MUST_EXIST;
+    }
+    
+    
     my $dialog = Wx::FileDialog->new
         ( $this, "Select a Perl script to package", '', '',
                  "Perl Scripts (*.pl, *.pm)|*.pl;*.pm|All Files (*.*)|*.*",
-                  wxOPEN|wxFILE_MUST_EXIST|wxCENTRE );
+                  $flags );
         
     if( $dialog->ShowModal != wxID_CANCEL ) {
         $filepath = $dialog->GetPath;
@@ -278,10 +254,19 @@ sub get_perlapp_name {
     
     my $directory = join('/', @paths);
     
+    my $flags;
+        
+    if ( Wx::wxVERSION() < 2.008000 ) {
+        $flags = wxSAVE|wxOVERWRITE_PROMPT|wxCENTRE;
+    } else {
+        $flags = wxFD_SAVE|wxFD_OVERWRITE_PROMPT;
+    }
+    
+    
     my $dialog = Wx::FileDialog->new
         ( $this, "Select a name for the perlapp file", '', '',
                  "PerlApp file (*.perlapp)|*.perlapp",
-                  wxSAVE|wxOVERWRITE_PROMPT|wxCENTRE );
+                  $flags );
     
     $dialog->SetDirectory($directory);
     $dialog->SetFilename($filename);

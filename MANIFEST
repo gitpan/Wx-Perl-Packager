@@ -7,4 +7,6 @@ lib/Wx/Perl/Packager/PDKWindow.pm
 lib/Wx/Perl/Packager/packager.ico
 bin/wxpdk
 bin/wxpar
+t/00-load.t
+t/01-pdk.t
 META.yml                                 Module meta-data (added by MakeMaker)
