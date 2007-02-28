@@ -1,7 +1,7 @@
 Revision history for Wx-Perl-Packager
 
-0.05    2007-02-28 17:00
-        Changes for wxWidgets 2.8.0.
+0.06    2007-02-28 17:00
+        Changes for wxWidgets 2.8.0 (replaces 0.04/05 which had pause problems)
 
 0.03    2006-07-01 17:00
         Fixed README.

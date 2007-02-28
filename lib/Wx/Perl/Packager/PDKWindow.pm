@@ -3,7 +3,7 @@ use Wx qw( :everything );
 use strict;
 use base qw(Wx::Frame);
 use vars qw($VERSION);
-$VERSION = 0.05;
+$VERSION = 0.06;
           
 use Wx::Event qw(   EVT_MENU EVT_CLOSE 
                     EVT_BUTTON );
