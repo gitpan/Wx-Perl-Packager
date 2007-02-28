@@ -3,7 +3,7 @@ use Wx qw( :everything );
 use strict;
 use base qw(Wx::Frame);
 use vars qw($VERSION);
-$VERSION = 0.06;
+$VERSION = 0.07;
           
 use Wx::Event qw(   EVT_MENU EVT_CLOSE 
                     EVT_BUTTON );
@@ -22,6 +22,10 @@ use Win32::TieRegistry( Delimiter=>"/", qw( REG_SZ
 
 
 sub new{
+   if(not exists $_[3]){ $_[3] = 'Wx::Perl::Packager  PDK Helper';}
+   if(not exists $_[4]){ $_[4] = wxDefaultPosition;}
+   if(not exists $_[5]){ $_[5] = wxDefaultSize;}
+   if(not exists $_[6]){ $_[6] = wxDEFAULT_FRAME_STYLE;}
    my( $this ) = shift->SUPER::new( @_ );
    $this->initBefore();
    $this->Show(0);

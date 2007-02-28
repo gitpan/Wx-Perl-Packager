@@ -16,7 +16,7 @@ wxpdk
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =cut
 
@@ -54,7 +54,7 @@ Version 0.06
 
 
 use strict;
-use Wx;
+use Wx qw( :everything );
 use Wx::Perl::Packager::PDKWindow;
 
 use base 'Wx::App';
@@ -62,7 +62,7 @@ use base 'Wx::App';
 sub OnInit {
   Wx::InitAllImageHandlers();
   my( $this ) = shift;
-  my( $mainwindow ) = Wx::Perl::Packager::PDKWindow->new(undef, -1, 'Wx::Perl::Packager::PDKWindow');
+  my( $mainwindow ) = Wx::Perl::Packager::PDKWindow->new(undef, -1);
   $mainwindow->Show(1);
   return 1;
 }
