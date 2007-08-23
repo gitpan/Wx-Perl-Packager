@@ -3,18 +3,10 @@ package Wx::Perl::Packager;
 use 5.008;
 use strict;
 use Wx 0.49;
-require Exporter;
 
-our @ISA = qw(Exporter);
+our ($VERSION, %_wxpack_wxdlls, @_wxpack_loadeddlls, $_wxpack_packed, $_wxpack_runtime);
 
-use vars qw($VERSION $WXDLLS @LOADEDWINDLLS $RUNTIME $PACKED @PDKCHECKDLLS);
-
-$VERSION = 0.07;
-our @EXPORT = qw();
-
-$WXDLLS = {};
-@LOADEDWINDLLS = ();
-$PACKED = 0;
+$VERSION = 0.09;
 
 =head1 NAME
 
@@ -22,7 +14,7 @@ Wx::Perl::Packager
 
 =head1 VERSION
 
-Version 0.07
+Version 0.09
 
 
 =head1 SYNOPSIS
@@ -31,7 +23,7 @@ Version 0.07
     
     At the start of your script ...
     
-    #!c:path/to/perl.exe
+    #!c:/path/to/perl.exe
     BEGIN { use Wx::Perl::Packager; }
     .....
     
@@ -42,15 +34,14 @@ Version 0.07
 
     At the start of your script ...
 
-    #!c:path/to/perl.exe
+    #!c:/path/to/perl.exe
     BEGIN { use Wx::Perl::Packager; }
     .....
 
     Then to start pp run 'wxpar' exactly as you would run pp.
     
     e.g.  wxpar --gui --icon=myicon.ico -o myprog.exe myscript.pl
-    
-    
+        
     For Perl2Exe
     
     At the start of your script ...
@@ -64,8 +55,8 @@ Version 0.07
     
     e.g
     
-    #perl2exe_bundle C:/Perl/site/lib/Alien/wxWidgets/msw_2_6_3_uni_mslu_cl_0/lib/wxmsw26u_core_vc_custom.dll
-    #perl2exe_bundle C:/Perl/site/lib/Alien/wxWidgets/msw_2_6_3_uni_mslu_cl_0/lib/wxbase26u_vc_custom.dll
+    #perl2exe_bundle C:/Perl/site/lib/Alien/wxWidgets/msw_2_8_3_uni_cl_0/lib/wxmsw26u_core_vc_custom.dll
+    #perl2exe_bundle C:/Perl/site/lib/Alien/wxWidgets/msw_2_8_3_uni_cl_0/lib/wxbase26u_vc_custom.dll
     
 =cut
     
@@ -89,84 +80,83 @@ Version 0.07
 
 if ($^O =~ /^MSWin/) {
     
-    require Wx;
-    
-    foreach my $dllkey ( keys (%{ $Wx::dlls })) {
-        $WXDLLS->{$dllkey} = { filename => $Wx::dlls->{$dllkey},
-                               loaded => 0,
-                              };
-    }
-
     if(my $pdkversion = $PerlApp::VERSION) {
         # PerlApp::VERSION is definitive for PerlApp
         my $execname = PerlApp::exe();
-        if($execname =~ /.*pdkcheck\.exe$/) { 
-            $RUNTIME = 'PDKCHECK';
-            __prepare_for_pdk_check();
+        if($execname =~ /.*pdkcheck\.exe$/) {
+            # this is the package time PDK Check
+            $_wxpack_runtime = 'PDKCHECK';
+            $_wxpack_packed = 0;
+            my $pdkcompilepath = $Wx::wx_path;
+            $pdkcompilepath =~ s/\//\\/g ;
+            $ENV{PATH} = $pdkcompilepath . ';' . $ENV{PATH};
         } else {
-            $RUNTIME = 'PERLAPP';
-            $PACKED = 1;
-            
+            # this is a running PerlApp
+            $_wxpack_runtime = 'PERLAPP';
+            $_wxpack_packed = 1;
         }
     } elsif($0 =~ /.+\.exe$/) {
         # in PARL packed executables $0 contains the exec name
-        $RUNTIME = 'PARLEXE';
-        $PACKED = 1;
+        $_wxpack_runtime = 'PARLEXE';
+        $_wxpack_packed = 1;
         
     } elsif($^X !~ /(perl)|(perl\.exe)$/i) {
-        # in other executables - packed or otherwise - $^X contains the exec name - not 'perl'
-        $RUNTIME = 'PERL2EXE';
-        $PACKED = 1;
+        # in other executables - packed or otherwise - $^X contains the exec name - not '(w)perl'
+        $_wxpack_runtime = 'PERL2EXE';
+        $_wxpack_packed = 1;
     } else {
-        $RUNTIME = 'PERL';
+        $_wxpack_runtime = 'PERL';
+        $_wxpack_packed = 0;
     }
     
-    if($PACKED) {
-
+    if( $_wxpack_packed || ( $_wxpack_runtime eq 'PDKCHECK' ) ) {
+        require Wx::Mini;
+        $Wx::Mini::wx_path = '';
+        foreach my $dllkey ( keys (%{ $Wx::dlls })) {
+            $_wxpack_wxdlls{$dllkey} = { filename => $Wx::dlls->{$dllkey},
+                                  loaded => 0,
+                                };
+        }
+    }
+    
+    if( $_wxpack_packed ) {
+        
+        require Wx;
         Wx::set_load_function( sub { my $dllkey = shift;
                         
                         # don't load twice
-                        return if($WXDLLS->{$dllkey}->{loaded});
-                        my $dllfile = $WXDLLS->{$dllkey}->{filename};
+                        return if( $_wxpack_wxdlls{$dllkey}->{loaded} );
+                        my $dllfile = $_wxpack_wxdlls{$dllkey}->{filename};
                         Wx::_load_file( $dllfile );
+                        $_wxpack_wxdlls{$dllkey}->{loaded} = 1;
 
-                        $WXDLLS->{$dllkey}->{loaded} = 1;
-
-                        push(@LOADEDWINDLLS, $dllfile);
+                        push(@_wxpack_loadeddlls, $dllfile);
                         1; } );
 
         Wx::set_end_function( sub {
-                        while( my $module = pop @LOADEDWINDLLS) {
+                        while( my $module = pop @_wxpack_loadeddlls ) {
                             Wx::_unload_plugin( $module );
                         }
 
                         1; } );
                         
-    } elsif($RUNTIME eq 'PDKCHECK') {
+    } elsif( $_wxpack_runtime eq 'PDKCHECK' ) {
         
-        Wx::set_load_function( sub { my $dllkey = shift; 1; } );
-        Wx::set_end_function( sub { 
-                                while(my $libref = pop(@PDKCHECKDLLS) ){
-                                    DynaLoader::dl_unload_file( $libref );
-                                }
-            
-                         1; } );
+        require Wx;
+        Wx::set_load_function( sub { 1; } );
+        Wx::set_end_function( sub { 1; } );
+        
     }
                     
                         
-} else {
-    # not mswin
-    $RUNTIME = 'PERL';
-}
+} 
 
 sub runtime {
-    return $RUNTIME;
+    return $_wxpack_runtime;
 }
 
-sub __prepare_for_pdk_check {
-    my $pdkcompilepath = $Wx::wx_path;
-    $pdkcompilepath =~ s/\//\\/g ;
-    $ENV{PATH} = $pdkcompilepath . ';' . $ENV{PATH};
+sub packaged {
+    return $_wxpack_packed;
 }
 
 

@@ -1,5 +1,14 @@
 Revision history for Wx-Perl-Packager
 
+0.09    2007-08-22 17:00
+        wxpar & wxpdk scripts updated for gcc built wx modules.
+        wxpdk updated for PDK version 7
+        wxpar script now uses argfile (Getopt::Argfile)
+        wxpar now runs pp using 'system' (was 'exec')
+
+0.08    2007-04-28 17:00
+        Amended documentation. Some code cleanup.
+
 0.07    2007-02-28 17:00
         Changes for wxWidgets 2.8.0 (replaces 0.04/05/06 which had pause problems on dir permissions)
 

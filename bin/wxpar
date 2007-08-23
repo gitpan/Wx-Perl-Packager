@@ -14,7 +14,7 @@ wxpar
 
 =head1 VERSION
 
-Version 0.07
+Version 0.09
 
 =cut
 
@@ -53,21 +53,69 @@ Version 0.07
 
 my @args = @ARGV;
 
+# get the outputpath, get argfilepath
+my ($i, $ix, $execpath, $argfile);
+
+for ($i = 0; $i < @args; $i++) {
+    if($ix) {
+        $execpath = $args[$i];
+        last;
+    }
+    if(($args[$i] eq '-o') || ($args[$i] eq '--output')) { $ix = 1; }
+}
+if($execpath) {
+    my @parts = split(/[\\\/]/, $execpath);
+    if( (scalar @parts) > 1 ) {
+        my $exec = pop(@parts);
+        $exec =~ s/\.exe$//i;
+        my $dirpath = join('/', @parts);
+        if(-d $dirpath) {
+            if($^O =~ /^MSWin/) { $dirpath = Win32::GetShortPathName($dirpath); }
+        } else {
+            die qq(target directory $dirpath does not exist);
+        }
+        $argfile = qq($dirpath/$exec.wxparargs);
+    } elsif( (scalar @parts) == 1 ) {
+        my $exec = pop(@parts);
+        $exec =~ s/\.exe$//i;
+        $argfile = "$exec.wxparargs";
+    }
+}
+
 require Wx::Mini;
     
 my $wxdir = $Wx::wx_path;
 my $wxdlls = $Wx::dlls;
 
+my @fileargs = ();
+
 foreach my $dllname(keys(%$wxdlls)) {
     my $filepath = $wxdir . '/' . $wxdlls->{$dllname};
     $filepath =~ s/\\/\//g;
-    unshift(@args, $filepath);
-    unshift(@args, '-l');
-    
+    unshift(@fileargs, qq(-l $filepath));
 }
+
+# add mingw32 runtime if present
+my $mingw32dll = qq($wxdir/mingwm10.dll);
+$mingw32dll =~ s/\\/\//g;
+if(-f $mingw32dll) {
+    unshift(@fileargs, qq(-l $mingw32dll));
+}
+
+# add attributes - always needed by Wx
+
+unshift(@fileargs, qq(-M attributes.pm));
 
 my $command = 'pp';
 my $arglist = '';
+
+if($argfile) {
+    open my $fh, '>', $argfile;
+    print $fh q(# wxpar Getopt::Argfile for PAR::Packer pp) . "\n\n";
+    print$fh qq($_\n) for(@fileargs);
+    close($fh);
+    unshift(@args, qq(\@$argfile));
+}   
 
 for my $argument (@args) {
     if($argument =~ /\s/) {
@@ -79,9 +127,9 @@ for my $argument (@args) {
 
 print qq(\nRunning Command .....\n\n);
 print qq($command $arglist\n);
-print qq(\n .....\n);
+print qq(\n .....\n\n);
 
-exec $command, $arglist;
+system($command, @args );
 
 1;
 

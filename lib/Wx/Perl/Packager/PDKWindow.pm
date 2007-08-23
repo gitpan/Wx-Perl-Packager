@@ -3,7 +3,7 @@ use Wx qw( :everything );
 use strict;
 use base qw(Wx::Frame);
 use vars qw($VERSION);
-$VERSION = 0.07;
+$VERSION = 0.09;
           
 use Wx::Event qw(   EVT_MENU EVT_CLOSE 
                     EVT_BUTTON );
@@ -113,6 +113,7 @@ sub create_perlapp {
     # Check where PerlApp is installed
     
     my $paipath = $this->get_perlapp_execpath();
+    
     my $packerpath = $paipath;
     $packerpath =~ s/pai\.exe$/perlapp\.exe/;
     if(!$paipath) {
@@ -167,6 +168,11 @@ sub create_perlapp {
         $bindline .= $wxpath . "\\" . $wxdlls->{$key} . ',extract,mode=444]' . "\n";
         print FILE $bindline;
     }
+    
+    my $mingw32dll = qq($wxpath\\mingwm10.dll);
+    if(-f $mingw32dll) {
+        print FILE 'Bind: mingwm10.dll[file=' . $mingw32dll . ',extract,mode=444]' . "\n";
+    }
 
     print FILE 'Clean: 0' ."\n";
         
@@ -217,7 +223,11 @@ sub create_perlapp {
     
     $paipath = Win32::GetShortPathName($paipath);
     my $pdkcmd = '--packer ../perlapp.exe "' . $apppath . '"';
-    exec $paipath, $pdkcmd;
+    #print qq(Running $paipath $pdkcmd ....\n\n);
+    #system($paipath, $pdkcmd);
+    wxTheApp->PDKExec($paipath);
+    wxTheApp->PDKParams($pdkcmd);
+    $this->Close();
  
 }
 
@@ -299,13 +309,36 @@ sub cancel_message {
 
 sub get_perlapp_execpath {
     my $this = shift;
-    my $regkey= $Registry->{"HKEY_CLASSES_ROOT/Perlapp.Project/Shell/Open/Command/"};
-   
-    my $path = $regkey->{"/"};
     my $pai;
-    if($path =~ /^"([^"]*)/) {
-        $pai = $1;
+    
+    # regkeys perl_auto_file / Perlapp.Project to return pai.exe or perlapp.exe
+    
+    my @keys = qw( perlapp_auto_file Perlapp.Project);
+    
+    for (@keys) {  
+        my $regkey= $Registry->{"HKEY_CLASSES_ROOT/$_/Shell/Open/Command/"};
+       
+        my $path = $regkey->{"/"};
+        if($path =~ /^"([^"]*)/) {
+            my $filepath = $1;
+            $filepath =~ s/perlapp.exe$/lib\\pai.exe/i;
+            $pai = $filepath;
+            last;
+        }
     }
+    if($pai && -e $pai) {
+        return $pai;
+    } else {
+        # try program file dirs
+        my @files = ( "$ENV{PROGRAMFILES}\\ActiveState Perl Dev Kit 7.0\\bin\\lib\\pai.exe", "$ENV{PROGRAMFILES}\\ActiveState Perl Dev Kit 6.0\\bin\\lib\\pai.exe" );
+        for my $file (@files) {
+            if( -e $file) {
+                $pai = $file;
+                last;
+            }
+        }
+    }
+    
     if($pai && -e $pai) {
         return $pai;
     } else {
