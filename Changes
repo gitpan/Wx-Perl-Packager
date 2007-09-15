@@ -1,5 +1,10 @@
 Revision history for Wx-Perl-Packager
 
+0.10    2007-09-15 12:00
+        Fixed longstanding error in wx_path settings.
+        Added some methods to help packaging.
+        Improved documentaton
+
 0.09    2007-08-22 17:00
         wxpar & wxpdk scripts updated for gcc built wx modules.
         wxpdk updated for PDK version 7

@@ -16,7 +16,7 @@ wxpdk
 
 =head1 VERSION
 
-Version 0.09
+Version 0.10
 
 =cut
 
@@ -25,35 +25,32 @@ Version 0.09
     PerlAPP / PDK assistant
 
     At the start of your script ...
-
-    #!c:path/to/perl.exe
-    BEGIN { use Wx::Perl::Packager; }
+    
+    #!c:/path/to/perl.exe
+    use Wx::Perl::Packager;
     .....
+    
+    or if you use threads with your application
+    #!c:/path/to/perl.exe
+    use threads;
+    use threads::shared;
+    use Wx::Perl::Packager;
+    
+    Wx::Perl::Packager must be loaded before any part of Wx so should appear at the
+    top of your main script. If you load any part of Wx in a BEGIN block, then you
+    must load Wx::Perl::Packager before it in your first BEGIN block. This may cause
+    you problems if you use threads within your Wx application. The threads
+    documentation advises against loading threads in a BEGIN block - so don't do it.
 
     Then to start perlapp run 'wxpdk'
-    
-    
-=head1 DESCRIPTION
-
-    A module to assist packaging Wx based applications with PAR, 
-    ActiveState PerlApp / PDK and Perl2Exe. All that is needed is 
-    that you include a 'use' statement as the first item in your 
-    BEGIN blocks. For Perl2Exe, an additional 'use' statement 
-    outside any BEGIN block ensures correct object cleanup.
-    
-    Also provided are:
-    
-    wxpdk
-    wxpar
-        
-    which assist in packaging the wxWidgets DLLs. 
-    
 
 =cut
 
 use strict;
 use Wx qw( :everything );
 use base 'Wx::App';
+
+my $VERSION = 0.10;
 
 sub OnInit {
   my( $this ) = shift;

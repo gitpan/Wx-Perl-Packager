@@ -2,22 +2,16 @@
 
 Wx-Perl-Packager
 
-Version 0.09
+Version 0.10
 
-(c)2006 Mark Dootson
+(c)2006 & 2007 Mark Dootson
 
 #########################################################
 
 Package to ease wxPerl application packaging with PAR and 
 PerlApp, PDK and Perl2Exe.
-Just include in BEGIN block at top of main script.
+Just use at top of main script.
 
-BEGIN { use Wx::Perl::Packager; }
-
-For Perl2Exe, add an additional use statement to
-ensure correct module clean up
-
-BEGIN { use Wx::Perl::Packager; }
 use Wx::Perl::Packager;
 
 PDK / PerlApp users are provided with a script called
@@ -38,12 +32,14 @@ REQUIRES >= Perl 5.8.1
 
 INSTALLATION
 
-To install this module, using VC6 run the following commands
+To install this module
 
     perl Makefile.PL
-    nmake
-    nmake test
-    nmake install
+    make
+    make test
+    make install
+    
+On windows just change to nmake or mingw32-make as required.
 
 
 SUPPORT AND DOCUMENTATION
@@ -54,7 +50,7 @@ After installing, you can find documentation for this module with the perldoc co
 
 You can also look for information at:
 
-    http://www.gigi.co.uk
+    http://www.wxperl.co.uk
 
 COPYRIGHT AND LICENCE
 
