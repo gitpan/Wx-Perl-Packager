@@ -1,9 +1,11 @@
 package Wx::Perl::Packager::PDKWindow;
+use Wx::Perl::Packager;
+use Wx::Perl::Packager::Utils;
 use Wx qw( :everything );
 use strict;
 use base qw(Wx::Frame);
 use vars qw($VERSION);
-$VERSION = 0.10;
+$VERSION = 0.11;
           
 use Wx::Event qw(   EVT_MENU EVT_CLOSE 
                     EVT_BUTTON );
@@ -11,15 +13,6 @@ use Wx::Event qw(   EVT_MENU EVT_CLOSE
 my($ID_MENU_FILE_EXIT)=(5);
 
 use Win32;
-use Win32::TieRegistry( Delimiter=>"/", qw( REG_SZ
-                                            REG_EXPAND_SZ
-                                            REG_DWORD
-                                            REG_BINARY
-                                            REG_MULTI_SZ
-                                            KEY_READ
-                                            KEY_WRITE
-                                            KEY_ALL_ACCESS ));        
-
 
 sub new{
    if(not exists $_[3]){ $_[3] = 'Wx::Perl::Packager  PDK Helper';}
@@ -110,119 +103,17 @@ sub packager_path {
 sub create_perlapp {
     my $this = shift;
     
-    # Check where PerlApp is installed
+    my $scriptname = $this->get_file_name() or die qq(did not select script to package);
+    my $perlapp = $this->get_perlapp_name($scriptname) or die qq(did not select perlapp file for output);
     
-    my $paipath = $this->get_perlapp_execpath();
+    my @libfiles = Wx::Perl::Packager::get_wxboundfiles();
+    Wx::Perl::Packager::Utils::create_perlapp_content(\@libfiles, $scriptname, $perlapp);
     
-    my $packerpath = $paipath;
-    $packerpath =~ s/pai\.exe$/perlapp\.exe/;
-    if(!$paipath) {
-        Wx::MessageBox('Unable to locate path to PerlApp executable',
-                      "Wx::Perl::Packager PDK Utility", 
-                      wxOK|wxICON_ERROR|wxCENTRE, $this);
-        return 0;
-    }
-    
-    # GET FILEPATH
-    my $filepath = undef;
-    while (!$filepath) {
-        $filepath = $this->get_file_name();
-        if(!$filepath) {
-            return 0 if $this->cancel_message('You have not selected a script to package');
-        
-        }
-        
-    }
-    my @paths = split(/[\\\/]/, $filepath);
-    my $scriptname = pop(@paths);
-      
-    my $scriptdir = join("\\", @paths);
-    
-    # SET PERLAPP
-    my $apppath = undef;
-    while (!$apppath) {
-        $apppath = $this->get_perlapp_name($filepath);
-        if(!$apppath) {
-            return 0 if $this->cancel_message('You have not selected a name for the perlapp file.');
-        
-        }
-        
-    }
-    
-    # GET DLL PATHS
-    my $wxpath = $Wx::wx_path;
-    my $wxdlls = $Wx::dlls;
-    
-    # WRITE FILE
-    open(FILE, ">$apppath");
-    
-    print FILE '#!' . $paipath . "\n";
-    print FILE 'PAP-Version: 1.0' . "\n";
-    
-    print FILE 'Packer: ' . $packerpath . "\n";
-    print FILE 'Script: ' . $scriptname . "\n";
-    print FILE 'Cwd: ' . $scriptdir . "\n";
-    
-    foreach my $key (keys(%$wxdlls)) {
-        my $bindline = 'Bind: ' . $wxdlls->{$key} . '[file=';
-        $bindline .= $wxpath . "\\" . $wxdlls->{$key} . ',extract,mode=444]' . "\n";
-        print FILE $bindline;
-    }
-    
-    my $mingw32dll = qq($wxpath\\mingwm10.dll);
-    if(-f $mingw32dll) {
-        print FILE 'Bind: mingwm10.dll[file=' . $mingw32dll . ',extract,mode=444]' . "\n";
-    }
-
-    print FILE 'Clean: 0' ."\n";
-        
-    # create a datestamp
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
-    $year += 1900;
-    $mon += 1;
-
-    my $datestamp = qq($year-);
-    $datestamp .= sprintf("%02d", $mon) . '-' . sprintf("%02d", $mday);
-    $datestamp .= ' ' . sprintf("%02d", $hour) . ':' . sprintf("%02d", $min) . ':' . sprintf("%02d", $sec);
-    print FILE 'Date: ' . $datestamp . "\n";
-    print FILE 'Debug: ' . "\n";
-    print FILE 'Dependent: 0' . "\n";
-    print FILE 'Dyndll: 0' . "\n";
-    
-    my $execname = $scriptname;
-    $execname =~ s/(\.pl|\.pm)$/\.exe/;
-    
-    print FILE 'Exe: ' . $execname . "\n";
-    print FILE 'Force: 0' . "\n";
-    print FILE 'Gui: 1' . "\n";
-    
-    # GET THE HOSTAME
-       
-    print FILE 'Hostname: ' . lc(Win32::NodeName()) . "\n";
-    print FILE 'No-Compress: 0' . "\n";
-    print FILE 'No-Logo: 0' . "\n";
-    print FILE 'Runlib: ' . "\n";
-    print FILE 'Shared: none' . "\n";
-    print FILE 'Tmpdir: ' . "\n";
-    print FILE 'Verbose: 0' . "\n";
-    print FILE 'Version-Comments: ' . "\n";
-    print FILE 'Version-CompanyName: ' . "\n";
-    print FILE 'Version-FileDescription: ' . "\n";
-    print FILE 'Version-FileVersion: ' . "\n";
-    print FILE 'Version-InternalName: ' . "\n";
-    print FILE 'Version-LegalCopyright: ' . "\n";
-    print FILE 'Version-LegalTrademarks: ' . "\n";
-    print FILE 'Version-OriginalFilename: ' . "\n";
-    print FILE 'Version-ProductName: ' . "\n";
-    print FILE 'Version-ProductVersion: ' . "\n";
-    print FILE 'Xclude: 0' . "\n";
-    
-    close(FILE);
     
     #launch perlapp
-    
+    my $paipath = Wx::Perl::Packager::Utils::get_perlapp_execpath();
     $paipath = Win32::GetShortPathName($paipath);
-    my $pdkcmd = '--packer ../perlapp.exe "' . $apppath . '"';
+    my $pdkcmd = '--packer ../perlapp.exe "' . $perlapp . '"';
     #print qq(Running $paipath $pdkcmd ....\n\n);
     #system($paipath, $pdkcmd);
     wxTheApp->PDKExec($paipath);
@@ -307,44 +198,7 @@ sub cancel_message {
    
 }
 
-sub get_perlapp_execpath {
-    my $this = shift;
-    my $pai;
-    
-    # regkeys perl_auto_file / Perlapp.Project to return pai.exe or perlapp.exe
-    
-    my @keys = qw( perlapp_auto_file Perlapp.Project);
-    
-    for (@keys) {  
-        my $regkey= $Registry->{"HKEY_CLASSES_ROOT/$_/Shell/Open/Command/"};
-       
-        my $path = $regkey->{"/"};
-        if($path =~ /^"([^"]*)/) {
-            my $filepath = $1;
-            $filepath =~ s/perlapp.exe$/lib\\pai.exe/i;
-            $pai = $filepath;
-            last;
-        }
-    }
-    if($pai && -e $pai) {
-        return $pai;
-    } else {
-        # try program file dirs
-        my @files = ( "$ENV{PROGRAMFILES}\\ActiveState Perl Dev Kit 7.0\\bin\\lib\\pai.exe", "$ENV{PROGRAMFILES}\\ActiveState Perl Dev Kit 6.0\\bin\\lib\\pai.exe" );
-        for my $file (@files) {
-            if( -e $file) {
-                $pai = $file;
-                last;
-            }
-        }
-    }
-    
-    if($pai && -e $pai) {
-        return $pai;
-    } else {
-        return undef;
-    }
-}
+
 
 __END__
 

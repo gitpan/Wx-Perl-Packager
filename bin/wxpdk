@@ -16,13 +16,58 @@ wxpdk
 
 =head1 VERSION
 
-Version 0.10
+Version 0.11
 
 =cut
 
 =head1 SYNOPSIS
 
     PerlAPP / PDK assistant
+    
+    To start perlapp gui run 'wxpdk' without any arguments.
+    
+    To use perlapp from the command line you can use wxpdk to create argument file
+    
+    wxpdk -A argfile.args
+    
+    then:
+    
+    perlapp @argfile.args--norunlib --dyndll --gui --exe foo.exe foo.pl
+    
+    To create a full .perlapp file without loading GUI
+    
+    wxpdk -S foo.pl -P foo.parlapp
+    
+    All options to wxpdk are
+    
+    -S    scriptname to package
+    -P    perlapp file to write
+    -A    args file to write with wxPerl dependencies
+    -H    print these options
+
+    Wx::Perl::Packager now supports the --dyndll option for PerlApp. The wxWidgets DLLs
+    are not themselves dynamically loaded.
+    
+    Wx::Perl::Packager does not support the --clean option for PerlApp
+    
+    Wx::Perl::Packager works with PerlApp by moving the following extracted bound
+    wxWidgets files to a separate temp directory:
+    
+    base
+    core
+    adv
+    mingwm10.dll if present
+    gdiplus.dll if needed by OS.
+    
+    The name of the directory is created using the logged in username, wxWidgets versions
+    the file sizes of the wxWidgets DLLs. This ensures that your application gets the
+    correct Wx dlls whilst also ensuring that only one temp directory is ever created
+    for a unique set of wxWidgets DLLs
+    
+    base, core, adv and mingwm10.dll should be bound as wxcore/dllname.dll.
+    All other wxWidgets dlls should be bound as 'dllname.dll'.
+    
+    The wxpdk utility takes care of this for you.
 
     At the start of your script ...
     
@@ -42,7 +87,6 @@ Version 0.10
     you problems if you use threads within your Wx application. The threads
     documentation advises against loading threads in a BEGIN block - so don't do it.
 
-    Then to start perlapp run 'wxpdk'
 
 =cut
 
@@ -50,7 +94,7 @@ use strict;
 use Wx qw( :everything );
 use base 'Wx::App';
 
-my $VERSION = 0.10;
+my $VERSION = 0.11;
 
 sub OnInit {
   my( $this ) = shift;
@@ -78,8 +122,58 @@ sub PDKParams {
 
 
 package main;
+use Wx::Perl::Packager;
+use Wx::Perl::Packager::Utils;
+use Getopt::Std;
+my %opts;
+getopts('S:P:A:Hh', \%opts);
+
+my $allowed = { -S => 'scriptname to package',
+                -P => 'name of .perlapp file to output',
+                -A => 'name of argument file for wxWidgets DLLs only',
+                -H => 'help',
+              };
+if($opts{H} || $opts{h}) {
+    print qq(wxpdk - helper for packaging wxPerl scripts with PerlApp\nOptions:\n);
+    for my $key (keys(%$allowed)) {
+        print qq($key\t$allowed->{$key}\n);
+    }
+    print qq(\nIf no options are specified, starts GUI interface\n);
+    exit(0);
+}
 
 if( $^O !~ /^MSWin/ ) { die qq(This version of wxpdk only supports MSWin); }
+
+# options
+my($scriptname, $perlapp, $argfile, $nogui);
+if( $opts{S} ) {
+    die qq(Unable to find scriptname $opts{S}) if(!-e $opts{S});
+    $scriptname = $opts{S};
+}
+if( $opts{P} ) {
+    die qq(Must provide option -S scriptname if you specify option -P perlapp) if(!$scriptname);
+    $perlapp = $opts{P};
+    $nogui = 1;
+}
+if( $scriptname && (!$perlapp) ) {
+    die qq(Must provide option -P perlapp if you specify option -S scriptname) if(!$scriptname);
+}
+
+$argfile = $opts{A} || 0;
+
+if($argfile || $scriptname) {
+    # get DLLs
+    my @libfiles = Wx::Perl::Packager::get_wxboundfiles();
+    if($scriptname) {
+        Wx::Perl::Packager::Utils::create_perlapp_content(\@libfiles, $scriptname, $perlapp);
+        print qq(PerlApp file created as: $perlapp\n);
+    }
+    if($argfile) {
+        Wx::Perl::Packager::Utils::create_argfile_content(\@libfiles, $argfile);
+        print qq(PerlApp \@Argument file created as: $argfile\n);
+    }
+    exit(0);
+}
 
 my( $app ) = PDKHelper->new();
 $app->MainLoop();

@@ -1,5 +1,12 @@
 Revision history for Wx-Perl-Packager
 
+0.11    2007-11-21 12:00
+        Handle gdiplus dependency
+        Added more methods to help packaging /fixed warnings
+        Fixed PerlApp errors - now use separate directory
+        --dyndll now works with PerlApp
+        --clean does not
+
 0.10    2007-09-15 12:00
         Fixed longstanding error in wx_path settings.
         Added some methods to help packaging.
