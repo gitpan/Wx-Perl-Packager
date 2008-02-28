@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Wx-Perl-Packager
-version:             0.14
+version:             0.15
 abstract:            ~
 license:             ~
 generated_by:        ExtUtils::MakeMaker version 6.3201

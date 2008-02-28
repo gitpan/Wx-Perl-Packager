@@ -5,7 +5,7 @@ use Wx qw( :everything );
 use strict;
 use base qw(Wx::Frame);
 use vars qw($VERSION);
-$VERSION = 0.14;
+$VERSION = 0.15;
 
 our $debugprinton = $ENV{WXPERLPACKAGER_DEBUGPRINT_ON} || 0;
           

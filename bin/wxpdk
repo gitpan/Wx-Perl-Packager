@@ -16,7 +16,7 @@ wxpdk
 
 =head1 VERSION
 
-Version 0.11
+Version 0.15
 
 =cut
 
@@ -30,9 +30,9 @@ Version 0.11
     
     wxpdk -A argfile.args
     
-    then:
+    then: e.g.
     
-    perlapp @argfile.args--norunlib --dyndll --gui --exe foo.exe foo.pl
+    perlapp @argfile.args--norunlib --gui --exe foo.exe foo.pl
     
     To create a full .perlapp file without loading GUI
     
@@ -45,12 +45,11 @@ Version 0.11
     -A    args file to write with wxPerl dependencies
     -H    print these options
 
-    Wx::Perl::Packager now supports the --dyndll option for PerlApp. The wxWidgets DLLs
-    are not themselves dynamically loaded.
+    Wx::Perl::Packager does not support the --dyndll option for PerlApp. 
     
     Wx::Perl::Packager does not support the --clean option for PerlApp
     
-    Wx::Perl::Packager works with PerlApp by moving the following extracted bound
+    Wx::Perl::Packager works with PerlApp by moving the following bound or included
     wxWidgets files to a separate temp directory:
     
     base
@@ -64,8 +63,8 @@ Version 0.11
     correct Wx dlls whilst also ensuring that only one temp directory is ever created
     for a unique set of wxWidgets DLLs
     
-    base, core, adv and mingwm10.dll should be bound as wxcore/dllname.dll.
-    All other wxWidgets dlls should be bound as 'dllname.dll'.
+    All the wxWidgets dlls and mingwm10.dll should be bound as 'dllname.dll'.
+    (i.e. not in subdirectories)
     
     The wxpdk utility takes care of this for you.
 
@@ -94,7 +93,7 @@ use strict;
 use Wx qw( :everything );
 use base 'Wx::App';
 
-my $VERSION = 0.11;
+my $VERSION = 0.15;
 
 sub OnInit {
   my( $this ) = shift;
@@ -122,8 +121,8 @@ sub PDKParams {
 
 
 package main;
-use Wx::Perl::Packager;
-use Wx::Perl::Packager::Utils;
+use Wx::Perl::Packager 0.14;
+use Wx::Perl::Packager::Utils 0.14;
 use Getopt::Std;
 my %opts;
 getopts('S:P:A:Hh', \%opts);
@@ -164,6 +163,7 @@ $argfile = $opts{A} || 0;
 if($argfile || $scriptname) {
     # get DLLs
     my @libfiles = Wx::Perl::Packager::get_wxboundfiles();
+    
     if($scriptname) {
         Wx::Perl::Packager::Utils::create_perlapp_content(\@libfiles, $scriptname, $perlapp);
         print qq(PerlApp file created as: $perlapp\n);

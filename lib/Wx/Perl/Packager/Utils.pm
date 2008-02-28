@@ -9,7 +9,7 @@ use Win32::TieRegistry( Delimiter=>"/", qw( REG_SZ
                                             KEY_WRITE
                                             KEY_ALL_ACCESS ));   
 
-our $VERSION = '0.14';
+our $VERSION = '0.15';
 
 our $debugprinton = $ENV{WXPERLPACKAGER_DEBUGPRINT_ON} || 0;
 

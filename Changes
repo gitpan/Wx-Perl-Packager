@@ -1,5 +1,12 @@
 Revision history for Wx-Perl-Packager
 
+0.15    2008-02-28 12:00
+        Updated to work with PDK 7.1
+        --dyndll does not with PerlApp
+        --clean  does not with PerlApp
+        
+0.12 - 0.14 Not Released
+
 0.11    2007-11-21 12:00
         Handle gdiplus dependency
         Added more methods to help packaging /fixed warnings

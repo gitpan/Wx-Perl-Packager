@@ -14,7 +14,7 @@ wxpar
 
 =head1 VERSION
 
-Version 0.11
+Version 0.15
 
 =cut
 
@@ -55,7 +55,7 @@ Version 0.11
 =cut
 use File::Copy;
 my @args = @ARGV;
-my $VERSION = 0.11;
+my $VERSION = 0.15;
 
 # get the outputpath, get argfilepath
 my ($i, $ix, $execpath, $argfile );

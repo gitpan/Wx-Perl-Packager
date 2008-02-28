@@ -6,7 +6,7 @@ use base qw( Exporter );
 
 our ( $VERSION, $_pconfig, $debugprinton );
 
-$VERSION = 0.14;
+$VERSION = 0.15;
 
 $debugprinton = $ENV{WXPERLPACKAGER_DEBUGPRINT_ON} || 0;
 
@@ -341,7 +341,7 @@ Wx::Perl::Packager
 
 =head1 VERSION
 
-Version 0.14
+Version 0.15
 
 =head1 SYNOPSIS
 
