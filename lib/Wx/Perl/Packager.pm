@@ -1,16 +1,22 @@
 package Wx::Perl::Packager;
 use 5.008;
 use strict;
+require Exporter;
+use base qw( Exporter );
 
-our ( $VERSION, $_pconfig );
+our ( $VERSION, $_pconfig, $debugprinton );
 
-$VERSION = 0.11;
+$VERSION = 0.14;
+
+$debugprinton = $ENV{WXPERLPACKAGER_DEBUGPRINT_ON} || 0;
 
 require Wx::Mini;
 $_pconfig = {};
 $_pconfig->{libpath} = $Wx::wx_path || '';
 $_pconfig->{libpath} =~ s/\\/\//g;
+__debugprint('LIBPATH', $_pconfig->{libpath});
 $_pconfig->{runtime} = 'PERL';
+$_pconfig->{tempkey} = undef;
 $_pconfig->{packed} = 0;
 $_pconfig->{mingwref} = undef;
 $_pconfig->{pdkdir} = undef;
@@ -18,127 +24,78 @@ $_pconfig->{modules} = {};      # hash of available wx modules
 $_pconfig->{loaded} = [];       # list of loaded wx modules
 $_pconfig->{coredlls} = [];     # base core and adv modules
 $_pconfig->{librefs} = [];      # refs to DLLs loaded by dynaloader
+$_pconfig->{loadversion} = 1;   # determine how wxdlls are packaged
+$_pconfig->{win32loaded} = 0;
+$_pconfig->{pdkdirpath} = '';
 $_pconfig->{gdiplus} = { boundfile => 'gdilib/gdiplus.dll',
                          needload  => undef, };
 
 # get our module details
-foreach my $modulekey ( keys (%{ $Wx::dlls })) {
-    my $filename;
-    if( $modulekey =~ /(base|core|adv)/) {
-        $filename = qq(wxcore/$Wx::dlls->{$modulekey});
-    } else {
-        $filename = $Wx::dlls->{$modulekey};
-    }
-        
+foreach my $modulekey ( keys (%{ $Wx::dlls })) {        
     $_pconfig->{modules}->{$modulekey} =
-                    { filename => $filename,
+                    { filename => $Wx::dlls->{$modulekey},
                       loaded => 0,
                       libref => undef,
                     };
 }
 
-if ($^O =~ /^MSWin/) {
+&__load_wx_packager_win32 if ($^O =~ /^MSWin/);
+
+sub import {
+    my $class = shift;
+    my %vars = @_;
+    $_pconfig->{tempkey} = $vars{tempkey} || undef;
+    if ($^O =~ /^MSWin/) {
+        __load_wx_packager_win32();
+    }
+}  
+
+sub __load_wx_packager_win32 {
+    # return if already loaded
+    # should only occur possibly in pdkcheck (and then maybe not)
+    
+    return if $_pconfig->{win32loaded};
+    $_pconfig->{win32loaded} = 1;
     
     # gdiplus flag
     my ($windesc, $wvmajor, $wvminor) = Win32::GetOSVersion();
     $_pconfig->{gdiplus}->{needload} = ( ( $wvmajor < 5 ) || ( ( $wvmajor == 5 ) && ( $wvminor < 1 ) ) ) ? 1 : 0;
-
+    __debugprint('GDIPLUS NEEDED', $_pconfig->{gdiplus}->{needload});
+    
     # figure out which environment
     
     if(my $pdkversion = $PerlApp::VERSION) {
         # PerlApp::VERSION is definitive for PerlApp
+        
+        my @verparts = split(/\./, $pdkversion);
+        $pdkversion = '';
+        for (@verparts) {
+            $pdkversion .= sprintf("%04d", $_);
+        }
+        
+        __debugprint('PDK VERSION', $pdkversion);
+        $_pconfig->{loadversion} = 2 if( $pdkversion >= 700010000 );
+        __debugprint('LOAD VERSION', $_pconfig->{loadversion});
+        
         my $execname = PerlApp::exe();
-        if($execname =~ /.*pdkcheck\.exe$/) {
-            # this is the package time PDK Check
-            $_pconfig->{runtime} = 'PDKCHECK';
-            $_pconfig->{packed} = 0;
-            my $pdkcompilepath = $_pconfig->{libpath};
-            $pdkcompilepath =~ s/\//\\/g ;
-            $ENV{PATH} = $pdkcompilepath . ';' . $ENV{PATH};
-        } else {
-            # this is a running PerlApp
-            $_pconfig->{runtime} = 'PERLAPP';
-            $_pconfig->{packed} = 1;
-            
-            # create unique dir for core wxWidgets DLLs
-            {
-                require DynaLoader;
-                my $basekey = 'wxlib-' . getlogin() . qq(-$Wx::alien_key-$Wx::VERSION-);
-                $basekey =~ s/[^A-Za-z0-9\-_]/_/g;
-                my $filesum = 1;
-                for('base','core','adv') {
-                    my $module = $_pconfig->{modules}->{$_};
-                    $module->{pdksource} = PerlApp::extract_bound_file($module->{filename});
-                    $filesum += (stat($module->{pdksource}))[7];
-                }
-            
-                $basekey .= sprintf("%x", $filesum);
-                
-                my $tempdir = $ENV{TEMP};
-                $tempdir = Win32::GetShortPathName($tempdir);
-                $tempdir =~ s/\\/\//g;
-                $_pconfig->{pdkdir} = qq($tempdir/$basekey);
-                mkdir($_pconfig->{pdkdir}, 0700) if(!-d $_pconfig->{pdkdir});
-                
-                # For PerlApp we have added gdiplus.dll as a bound file
-                # but without extracting at startup.
-                # We extract it, and move it
-                if($_pconfig->{gdiplus}->{needload}) {
-                    my $gdidllpath = PerlApp::extract_bound_file($_pconfig->{gdiplus}->{boundfile});
-                    my $gditarget = qq($_pconfig->{pdkdir}/gdiplus.dll);
-                    Win32::CopyFile($gdidllpath, $gditarget, 0) if(-e $gdidllpath );
-                }
-                
-                # extract mingwm10.dll if it is in the dir
-                my $mingwdll = PerlApp::extract_bound_file('wxcore/mingwm10.dll');
-                my $targetmingwdll = qq($_pconfig->{pdkdir}/mingwm10.dll);
-                
-                if(-e $mingwdll ) {
-                    Win32::CopyFile($mingwdll, $targetmingwdll, 0);  # will not overwrite existing file
-                    $_pconfig->{mingwref} = DynaLoader::dl_load_file($targetmingwdll);
-                }                
-                
-                for('base','core','adv') {
-                    my $module = $_pconfig->{modules}->{$_};
-                    my $sourcedll = $module->{pdksource};
-                    my $targetdll = qq($_pconfig->{pdkdir}/$Wx::dlls->{$_});
-                    if(-e $sourcedll) {
-                        Win32::CopyFile($sourcedll, $targetdll, 0);  # will not overwrite existing file
-                        $module->{libref} = DynaLoader::dl_load_file($targetdll);
-                    }
-                }
+        if($execname =~ /.*pdkcheck\d*\.exe$/) {
+            if( $pdkversion < 700010000 ) {
+                __prepare_pdkcheck_win32_ver1();
+            } else {
+                __prepare_pdkcheck_win32_ver2();
             }
+        } else {
+            __prepare_perlapp_win32();
         }
+        
     } elsif($0 =~ /.+\.exe$/) {
-        # in PARL packed executables $0 contains the exec name
-        $_pconfig->{runtime} = 'PARLEXE';
-        $_pconfig->{packed} = 1;
-        
-        # For PAR::Packer the cache directory
-        # is already on the path so all we need do
-        # is extract the gdiplus dll to there
-        
-        # If we are in PARL, then we have PAR
-        
-        my $pargdifilepath = qq($ENV{PAR_TEMP}/gdiplus.dll);
-        
-        if($_pconfig->{gdiplus}->{needload} && (!-e $pargdifilepath) ) {
-            my $zip = PAR::par_handle($0);
-            eval {
-                $zip->memberNamed( $_pconfig->{gdiplus}->{boundfile} )->extractToFileNamed( $pargdifilepath );
-            };
-            $@ = '';
-        }
-            
-        
-        
+        __prepare_par_win32();
     } elsif($^X !~ /(perl)|(perl\.exe)$/i) {
         # in other executables - packed or otherwise - $^X contains the exec name - not '(w)perl'
         $_pconfig->{runtime} = 'PERL2EXE';
         $_pconfig->{packed} = 1;        
     }
-    
-    
+
     # If we need to define an empty wx_path
     
     if( $_pconfig->{packed} || ( $_pconfig->{runtime} eq 'PDKCHECK' ) ) {
@@ -210,11 +167,12 @@ sub get_wxboundfiles {
         my $filepath = $_;
         my @vals = split(/[\\\/]/, $filepath);
         my $filename = pop(@vals);
-        for( 'adv', 'core', 'base' ) {
-            if( ($_pconfig->{modules}->{$_}->{filename} =~ /$filename$/) || ( $filename eq 'mingwm10.dll' ) ) {
-                $filename = qq(wxcore/$filename);
-            }
-        }
+        
+        #for( 'adv', 'core', 'base' ) {
+        #    if( ($_pconfig->{modules}->{$_}->{filename} =~ /$filename$/) || ( $filename eq 'mingwm10.dll' ) ) {
+        #        #$filename = qq(wxcore/$filename);
+        #    }
+        #}
         
         push( @libfiles, { boundfile   => $filename,
                            autoextract => 1,
@@ -244,6 +202,138 @@ END {
     DynaLoader::dl_unload_file( $_pconfig->{mingwref} ) if $_pconfig->{mingwref};
 }
 
+sub __prepare_pdkcheck_win32_ver1 {
+    # this is the package time PDK Check
+    __debugprint('PDK PREPARE VERSION', '1');
+    $_pconfig->{runtime} = 'PDKCHECK';
+    $_pconfig->{packed} = 0;
+    my $pdkcompilepath = $_pconfig->{libpath};
+    $pdkcompilepath =~ s/\//\\/g ;
+    $ENV{PATH} = $pdkcompilepath . ';' . $ENV{PATH};
+}
+
+sub __prepare_pdkcheck_win32_ver2 {
+    # this is the package time PDK Check
+    __debugprint('PDK PREPARE VERSION', '2');
+    $_pconfig->{runtime} = 'PDKCHECK';
+    $_pconfig->{packed} = 0;
+    my $pdkcompilepath = $_pconfig->{libpath};
+    $pdkcompilepath =~ s/\//\\/g ;
+    $ENV{PATH} = $pdkcompilepath . ';' . $ENV{PATH};
+    # 
+}
+
+sub __prepare_perlapp_win32 {
+    # this is a running PerlApp
+    __debugprint('PATH', $ENV{PATH});
+    $_pconfig->{runtime} = 'PERLAPP';
+    $_pconfig->{packed} = 1;
+    require DynaLoader;
+    my $basekey = 'wxlib-' . getlogin() . '-';
+    $_pconfig->{tempkey} ||= qq($Wx::alien_key-$Wx::VERSION-);
+    $basekey .= $_pconfig->{tempkey};
+    $basekey =~ s/[^A-Za-z0-9\-_]/_/g;
+    my $filesum = 1;
+    my $basemodule = $_pconfig->{modules}->{base};
+    if( $_pconfig->{loadversion} > 1 ) {
+        my @envpaths = split(/;/, $ENV{PATH});
+        for(@envpaths) {
+            my $pdkdirpath = $_;
+            $pdkdirpath =~ s/\\/\//g;
+            $pdkdirpath =~ s/\/$//;
+            my $fpath = qq($pdkdirpath/$basemodule->{filename});
+            if(-e $fpath) {
+                $_pconfig->{pdkdirpath} = $pdkdirpath;
+                last;
+            }
+            $fpath = qq($pdkdirpath/$basemodule->{filename});
+        }
+        
+    } else {
+        # loadversion 1
+        my $filepath = PerlApp::extract_bound_file($basemodule->{filename});
+        $filepath =~ s/\\/\//g;
+        $filepath =~ s/\/$basemodule->{filename}$//;
+        $_pconfig->{pdkdirpath} = $filepath;
+    }
+    
+    die qq(Unable to find Wx DLL files) if(!-d $_pconfig->{pdkdirpath});  
+
+    __debugprint('PDKSOURCEDIR', $_pconfig->{pdkdirpath});
+
+    for('base','core','adv') {
+        my $module = $_pconfig->{modules}->{$_};
+        $module->{pdksource} = qq($_pconfig->{pdkdirpath}/$module->{filename});
+        $filesum += (stat($module->{pdksource}))[7];
+    }
+
+    $basekey .= sprintf("%x", $filesum);
+    
+    my $tempdir = $ENV{TEMP};
+    $tempdir = Win32::GetShortPathName($tempdir);
+    $tempdir =~ s/\\/\//g;
+    $_pconfig->{pdkdir} = qq($tempdir/$basekey);
+    mkdir($_pconfig->{pdkdir}, 0700) if(!-d $_pconfig->{pdkdir});
+    
+    __debugprint('WXLIB DIR', $_pconfig->{pdkdir});
+    
+    # For PerlApp we may have added gdiplus.dll as a bound file
+    # but without extracting at startup.
+    # We extract it, and move it
+    if($_pconfig->{gdiplus}->{needload}) {
+        my $gdidllpath = PerlApp::extract_bound_file($_pconfig->{gdiplus}->{boundfile});
+        my $gditarget = qq($_pconfig->{pdkdir}/gdiplus.dll);
+        Win32::CopyFile($gdidllpath, $gditarget, 0) if(-e $gdidllpath );
+    }
+    
+    # extract mingwm10.dll if it is in the dir
+    my $mingwdll = qq($_pconfig->{pdkdirpath}/mingwm10.dll);
+    my $targetmingwdll = qq($_pconfig->{pdkdir}/mingwm10.dll);
+    
+    if(-e $mingwdll ) {
+        Win32::CopyFile($mingwdll, $targetmingwdll, 0);  # will not overwrite existing file
+        $_pconfig->{mingwref} = DynaLoader::dl_load_file($targetmingwdll);
+    }                
+    
+    for('base','core','adv') {
+        my $module = $_pconfig->{modules}->{$_};
+        my $sourcedll = $module->{pdksource};
+        my $targetdll = qq($_pconfig->{pdkdir}/$Wx::dlls->{$_});
+        if(-e $sourcedll) {
+            Win32::CopyFile($sourcedll, $targetdll, 0);  # will not overwrite existing file
+            $module->{libref} = DynaLoader::dl_load_file($targetdll);
+        }
+    }
+}
+
+sub __prepare_par_win32 {
+    # in PARL packed executables $0 contains the exec name
+    $_pconfig->{runtime} = 'PARLEXE';
+    $_pconfig->{packed} = 1;
+    
+    # For PAR::Packer the cache directory
+    # is already on the path so all we need do
+    # is extract the gdiplus dll to there
+    
+    # If we are in PARL, then we have PAR
+    
+    my $pargdifilepath = qq($ENV{PAR_TEMP}/gdiplus.dll);
+    
+    if($_pconfig->{gdiplus}->{needload} && (!-e $pargdifilepath) ) {
+        my $zip = PAR::par_handle($0);
+        eval {
+            $zip->memberNamed( $_pconfig->{gdiplus}->{boundfile} )->extractToFileNamed( $pargdifilepath );
+        };
+        $@ = '';
+    }    
+}
+
+sub __debugprint {
+    my ($item, $data) = @_;
+    return if(!$debugprinton);
+    print qq($item: $data\n);
+}
+
     
 =head1 NAME
 
@@ -251,7 +341,7 @@ Wx::Perl::Packager
 
 =head1 VERSION
 
-Version 0.11
+Version 0.14
 
 =head1 SYNOPSIS
 
@@ -283,9 +373,9 @@ Version 0.11
     
     wxpdk -A argfile.args
     
-    then:
+    then: e.g.
     
-    perlapp @argfile.args--norunlib --dyndll --gui --exe foo.exe foo.pl
+    perlapp @argfile.args--norunlib --gui --exe foo.exe foo.pl
     
     To create a full .perlapp file without loading GUI
     
@@ -298,12 +388,11 @@ Version 0.11
     -A    args file to write with wxPerl dependencies
     -H    print these options
 
-    Wx::Perl::Packager now supports the --dyndll option for PerlApp. The wxWidgets DLLs
-    are not themselves dynamically loaded.
+    Wx::Perl::Packager does not support the --dyndll option for PerlApp.
     
     Wx::Perl::Packager does not support the --clean option for PerlApp
     
-    Wx::Perl::Packager works with PerlApp by moving the following extracted bound
+    Wx::Perl::Packager works with PerlApp by moving the following bound or included
     wxWidgets files to a separate temp directory:
     
     base
@@ -317,8 +406,8 @@ Version 0.11
     correct Wx dlls whilst also ensuring that only one temp directory is ever created
     for a unique set of wxWidgets DLLs
     
-    base, core, adv and mingwm10.dll should be bound as wxcore/dllname.dll.
-    All other wxWidgets dlls should be bound as 'dllname.dll'.
+    All the wxWidgets dlls and mingwm10.dll should be bound as 'dllname.dll'.
+    (i.e. not in subdirectories)
     
     The wxpdk utility takes care of this for you.
 
@@ -390,7 +479,7 @@ Version 0.11
     If you are using recent PPM packages from http://www.wxperl.co.uk, the
     gdiplus.dll is included.
     
-    Running wxpar or wxpdk will pick up the gdiplus.dllautomatically and
+    Running wxpar or wxpdk will pick up the gdiplus.dll automatically and
     package it correctly.
 
 =head2 Methods

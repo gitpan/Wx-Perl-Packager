@@ -9,23 +9,38 @@ use Win32::TieRegistry( Delimiter=>"/", qw( REG_SZ
                                             KEY_WRITE
                                             KEY_ALL_ACCESS ));   
 
-our $VERSION = '0.11';
+our $VERSION = '0.14';
 
+our $debugprinton = $ENV{WXPERLPACKAGER_DEBUGPRINT_ON} || 0;
 
 sub create_perlapp_content {
     my ($libfiles, $filepath, $apppath) = @_;
     # Check where PerlApp is installed
     
     my $paipath = get_perlapp_execpath();
+    my $perlappversion = get_perlapp_version($paipath);
+    
+    my @libfiles = @$libfiles;
+    
+    if( $perlappversion >= 7.1 ) {
+        # reduce libfiles
+        @libfiles = grep{ $_->{file} =~ /gdiplus\./ } @$libfiles;
+    }
     
     my $packerpath = $paipath;
     $packerpath =~ s/pai\.exe$/perlapp\.exe/;
+    
+    __debugprint('PERLAPP', $packerpath);
+    __debugprint('PAI', $paipath);
+    __debugprint('PERLAPP VERSION', $perlappversion);
+    
     if(!$paipath) { die 'Unable to locate path to PerlApp executable'; }
     
     my @paths = split(/[\\\/]/, $filepath);
     my $scriptname = pop(@paths);
       
     my $scriptdir = join("\\", @paths);
+    
     
     
     # WRITE FILE
@@ -38,7 +53,7 @@ sub create_perlapp_content {
     print FILE 'Script: ' . $scriptname . "\n";
     print FILE 'Cwd: ' . $scriptdir . "\n";
     
-    foreach my $lfile (@$libfiles) {
+    foreach my $lfile (@libfiles) {
         my $bindline = 'Bind: ' . $lfile->{boundfile} . '[file=';
         $bindline .= $lfile->{file};
         $bindline .= ',extract' if $lfile->{autoextract}; 
@@ -59,7 +74,7 @@ sub create_perlapp_content {
     print FILE 'Date: ' . $datestamp . "\n";
     print FILE 'Debug: ' . "\n";
     print FILE 'Dependent: 0' . "\n";
-    print FILE 'Dyndll: 1' . "\n";
+    print FILE 'Dyndll: 0' . "\n";
     
     my $execname = $scriptname;
     $execname =~ s/(\.pl|\.pm)$/\.exe/;
@@ -95,11 +110,19 @@ sub create_perlapp_content {
 sub create_argfile_content {
     my ($libfiles, $filepath ) = @_;
     
+    my $perlappversion = get_perlapp_version();
+    
+    my @libfiles = @$libfiles;
+    
+    if( $perlappversion >= 7.1 ) {
+        # reduce libfiles
+        @libfiles = grep{ $_->{file} =~ /gdiplus\./ } @$libfiles;
+    }
     
     # WRITE FILE
     open(FILE, ">$filepath") or die qq(Failed opening args file $filepath: $!);
     
-    for my $lfile (@$libfiles) {
+    for my $lfile (@libfiles) {
         my $bindline = '--bind ' . $lfile->{boundfile} . '[file=';
         $bindline .= $lfile->{file};
         $bindline .= ',extract' if $lfile->{autoextract}; 
@@ -117,7 +140,8 @@ sub get_perlapp_execpath {
     
     # regkeys perl_auto_file / Perlapp.Project to return pai.exe or perlapp.exe
     
-    my @keys = qw( perlapp_auto_file Perlapp.Project);
+    my @keys = qw( Perlapp.Project perlapp_auto_file );
+    #my @keys = qw( perlapp_auto_file Perlapp.Project );
     
     for (@keys) {  
         my $regkey= $Registry->{"HKEY_CLASSES_ROOT/$_/Shell/Open/Command/"};
@@ -134,8 +158,17 @@ sub get_perlapp_execpath {
         return $pai;
     } else {
         # try program file dirs
-        my @files = ( "$ENV{PROGRAMFILES}\\ActiveState Perl Dev Kit 7.0\\bin\\lib\\pai.exe", "$ENV{PROGRAMFILES}\\ActiveState Perl Dev Kit 6.0\\bin\\lib\\pai.exe" );
-        for my $file (@files) {
+        
+        my $progfiledir = $ENV{PROGRAMFILES};
+        
+        opendir(PROGDIR, $progfiledir) or die qq(Could not open $progfiledir: $!);
+        my @asdirs = grep{ /^ActiveState Perl Dev Kit/ && -d "$progfiledir\\$_" } readdir(PROGDIR);
+        closedir(PROGDIR);       
+        
+        #my @files = ( "$ENV{PROGRAMFILES}\\ActiveState Perl Dev Kit 7.0\\bin\\lib\\pai.exe", "$ENV{PROGRAMFILES}\\ActiveState Perl Dev Kit 6.0\\bin\\lib\\pai.exe" );
+        my @progdirpaths = sort {$b cmp $a} @asdirs;
+        for my $asdir (@progdirpaths) {
+            my $file = qq($asdir\\bin\\lib\\pai.exe);
             if( -e $file) {
                 $pai = $file;
                 last;
@@ -148,6 +181,22 @@ sub get_perlapp_execpath {
     } else {
         return undef;
     }
+}
+
+sub get_perlapp_version {
+    my $execpath = shift || get_perlapp_execpath();
+    my $perlappversion = undef;
+    
+    if( $execpath =~ /ActiveState Perl Dev Kit ([\d\.]+)/) {
+        $perlappversion = $1;
+    }
+    return $perlappversion;
+}
+
+sub __debugprint {
+    my ($item, $data) = @_;
+    return if(!$debugprinton);
+    print qq($item: $data\n);
 }
 
 

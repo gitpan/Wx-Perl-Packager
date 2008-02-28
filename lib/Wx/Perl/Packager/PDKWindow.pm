@@ -5,7 +5,9 @@ use Wx qw( :everything );
 use strict;
 use base qw(Wx::Frame);
 use vars qw($VERSION);
-$VERSION = 0.11;
+$VERSION = 0.14;
+
+our $debugprinton = $ENV{WXPERLPACKAGER_DEBUGPRINT_ON} || 0;
           
 use Wx::Event qw(   EVT_MENU EVT_CLOSE 
                     EVT_BUTTON );
@@ -107,8 +109,8 @@ sub create_perlapp {
     my $perlapp = $this->get_perlapp_name($scriptname) or die qq(did not select perlapp file for output);
     
     my @libfiles = Wx::Perl::Packager::get_wxboundfiles();
-    Wx::Perl::Packager::Utils::create_perlapp_content(\@libfiles, $scriptname, $perlapp);
     
+    Wx::Perl::Packager::Utils::create_perlapp_content(\@libfiles, $scriptname, $perlapp);
     
     #launch perlapp
     my $paipath = Wx::Perl::Packager::Utils::get_perlapp_execpath();
@@ -197,6 +199,13 @@ sub cancel_message {
     }
    
 }
+
+sub __debugprint {
+    my ($item, $data) = @_;
+    return if(!$debugprinton);
+    print qq($item: $data\n);
+}
+
 
 
 
