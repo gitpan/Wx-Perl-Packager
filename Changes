@@ -1,5 +1,9 @@
 Revision history for Wx-Perl-Packager
 
+0.16    2010-01-10 12:00
+        Updated to work with PDK 8.1 / 8.0.2
+        Handle monolithic wxWidgets dlls        
+        
 0.15    2008-02-28 12:00
         Updated to work with PDK 7.1
         --dyndll does not with PerlApp

@@ -16,13 +16,17 @@ wxpdk
 
 =head1 VERSION
 
-Version 0.15
+Version 0.16
 
 =cut
 
 =head1 SYNOPSIS
 
     PerlAPP / PDK assistant
+    
+    NOTE: This script is not necessary with PD versions 8.x or above.
+    Using it in PDK version 8.x or later will result in Wx dlls
+    being packaged twice.
     
     To start perlapp gui run 'wxpdk' without any arguments.
     
@@ -93,7 +97,7 @@ use strict;
 use Wx qw( :everything );
 use base 'Wx::App';
 
-my $VERSION = 0.15;
+my $VERSION = 0.16;
 
 sub OnInit {
   my( $this ) = shift;

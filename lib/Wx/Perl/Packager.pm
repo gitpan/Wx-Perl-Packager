@@ -6,7 +6,7 @@ use base qw( Exporter );
 
 our ( $VERSION, $_pconfig, $debugprinton );
 
-$VERSION = 0.15;
+$VERSION = 0.16;
 
 $debugprinton = $ENV{WXPERLPACKAGER_DEBUGPRINT_ON} || 0;
 
@@ -73,17 +73,15 @@ sub __load_wx_packager_win32 {
             $pdkversion .= sprintf("%04d", $_);
         }
         
+        $pdkversion =~ s/^0+//;
+        
         __debugprint('PDK VERSION', $pdkversion);
         $_pconfig->{loadversion} = 2 if( $pdkversion >= 700010000 );
         __debugprint('LOAD VERSION', $_pconfig->{loadversion});
         
         my $execname = PerlApp::exe();
         if($execname =~ /.*pdkcheck\d*\.exe$/) {
-            if( $pdkversion < 700010000 ) {
-                __prepare_pdkcheck_win32_ver1();
-            } else {
-                __prepare_pdkcheck_win32_ver2();
-            }
+            __prepare_pdkcheck_win32();
         } else {
             __prepare_perlapp_win32();
         }
@@ -110,6 +108,7 @@ sub __load_wx_packager_win32 {
         require Wx;
         Wx::set_load_function( sub { my $modulekey = shift;
                         my $module = $_pconfig->{modules}->{$modulekey};
+                        return if !$module; # maybe mono build
                         # don't load twice
                         return if( $module->{loaded} );
                         Wx::_load_file( $module->{filename} );
@@ -168,12 +167,6 @@ sub get_wxboundfiles {
         my @vals = split(/[\\\/]/, $filepath);
         my $filename = pop(@vals);
         
-        #for( 'adv', 'core', 'base' ) {
-        #    if( ($_pconfig->{modules}->{$_}->{filename} =~ /$filename$/) || ( $filename eq 'mingwm10.dll' ) ) {
-        #        #$filename = qq(wxcore/$filename);
-        #    }
-        #}
-        
         push( @libfiles, { boundfile   => $filename,
                            autoextract => 1,
                            file        => $filepath,
@@ -202,25 +195,14 @@ END {
     DynaLoader::dl_unload_file( $_pconfig->{mingwref} ) if $_pconfig->{mingwref};
 }
 
-sub __prepare_pdkcheck_win32_ver1 {
+sub __prepare_pdkcheck_win32 {
     # this is the package time PDK Check
-    __debugprint('PDK PREPARE VERSION', '1');
+    __debugprint('PDK PREPARE PACKAGE TIME');
     $_pconfig->{runtime} = 'PDKCHECK';
     $_pconfig->{packed} = 0;
     my $pdkcompilepath = $_pconfig->{libpath};
     $pdkcompilepath =~ s/\//\\/g ;
     $ENV{PATH} = $pdkcompilepath . ';' . $ENV{PATH};
-}
-
-sub __prepare_pdkcheck_win32_ver2 {
-    # this is the package time PDK Check
-    __debugprint('PDK PREPARE VERSION', '2');
-    $_pconfig->{runtime} = 'PDKCHECK';
-    $_pconfig->{packed} = 0;
-    my $pdkcompilepath = $_pconfig->{libpath};
-    $pdkcompilepath =~ s/\//\\/g ;
-    $ENV{PATH} = $pdkcompilepath . ';' . $ENV{PATH};
-    # 
 }
 
 sub __prepare_perlapp_win32 {
@@ -234,7 +216,7 @@ sub __prepare_perlapp_win32 {
     $basekey .= $_pconfig->{tempkey};
     $basekey =~ s/[^A-Za-z0-9\-_]/_/g;
     my $filesum = 1;
-    my $basemodule = $_pconfig->{modules}->{base};
+    my $basemodule = $_pconfig->{modules}->{base} || $_pconfig->{modules}->{core};
     if( $_pconfig->{loadversion} > 1 ) {
         my @envpaths = split(/;/, $ENV{PATH});
         for(@envpaths) {
@@ -242,7 +224,7 @@ sub __prepare_perlapp_win32 {
             $pdkdirpath =~ s/\\/\//g;
             $pdkdirpath =~ s/\/$//;
             my $fpath = qq($pdkdirpath/$basemodule->{filename});
-            if(-e $fpath) {
+            if($fpath && (-e $fpath)) {
                 $_pconfig->{pdkdirpath} = $pdkdirpath;
                 last;
             }
@@ -263,6 +245,7 @@ sub __prepare_perlapp_win32 {
 
     for('base','core','adv') {
         my $module = $_pconfig->{modules}->{$_};
+        next if !$module;
         $module->{pdksource} = qq($_pconfig->{pdkdirpath}/$module->{filename});
         $filesum += (stat($module->{pdksource}))[7];
     }
@@ -297,6 +280,7 @@ sub __prepare_perlapp_win32 {
     
     for('base','core','adv') {
         my $module = $_pconfig->{modules}->{$_};
+        next if !$module;
         my $sourcedll = $module->{pdksource};
         my $targetdll = qq($_pconfig->{pdkdir}/$Wx::dlls->{$_});
         if(-e $sourcedll) {
@@ -341,7 +325,7 @@ Wx::Perl::Packager
 
 =head1 VERSION
 
-Version 0.15
+Version 0.16
 
 =head1 SYNOPSIS
 
@@ -402,14 +386,15 @@ Version 0.15
     gdiplus.dll if needed by OS.
     
     The name of the directory is created using the logged in username, wxWidgets versions
-    the file sizes of the wxWidgets DLLs. This ensures that your application gets the
-    correct Wx dlls whilst also ensuring that only one temp directory is ever created
-    for a unique set of wxWidgets DLLs
+    and the file sizes of the wxWidgets DLLs. This ensures that your application gets the
+    correct Wx dlls whilst also ensuring that only one permanent temp directory is ever 
+    created for a unique set of wxWidgets DLLs
     
     All the wxWidgets dlls and mingwm10.dll should be bound as 'dllname.dll'.
     (i.e. not in subdirectories)
     
-    The wxpdk utility takes care of this for you.
+    The wxpdk utility takes care of this for you for PDK versions less than 8.x
+    For PDK versions 8 and above, wxpdk should not be used.
 
    
     For PAR
@@ -421,9 +406,7 @@ Version 0.15
     NOTE: For PAR::Packer, if you are distributing wxWidgets libs with
     GDI+ support (wxGraphicsContext) and you don't use wxpar, you must
     distribute gdiplus.dll separately for those Windows operating systems
-    that require it. If you use wxpar and the Alien::wxWidgets PPM's from
-    http://www.wxperl.co.uk/ it is packaged for you and loaded where the
-    operating system requires.
+    that require it.
 
     For Perl2Exe
     
@@ -454,7 +437,7 @@ Version 0.15
 
     Also provided are:
     
-    wxpdk
+    wxpdk (PerlApp version 7.x and below )
     wxpar
         
     which assist in packaging the wxWidgets DLLs.
@@ -475,12 +458,6 @@ Version 0.15
     If you do this, Wx::Perl::Packager will determine the operating system version
     at runtime and extract gdiplus.dll to the path if the host OS requires
     it.
-    
-    If you are using recent PPM packages from http://www.wxperl.co.uk, the
-    gdiplus.dll is included.
-    
-    Running wxpar or wxpdk will pick up the gdiplus.dll automatically and
-    package it correctly.
 
 =head2 Methods
 
@@ -551,7 +528,7 @@ Mattia Barbon for wxPerl.
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006,2007 Mark Dootson, all rights reserved.
+Copyright 2006 - 2010 Mark Dootson, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
