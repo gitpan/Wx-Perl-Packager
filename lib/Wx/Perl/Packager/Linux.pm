@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager/Linux.pm
 # Description:    module for Linux specific handlers
-# File Revision:  $Id: Linux.pm 35 2010-01-24 08:30:07Z  $
+# File Revision:  $Id: Linux.pm 36 2010-01-24 15:08:53Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson

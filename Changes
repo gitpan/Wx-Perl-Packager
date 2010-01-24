@@ -1,5 +1,8 @@
 Revision history for Wx-Perl-Packager
 
+0.19    2010-01-23 23:00
+        Release 18 broken (missing modules)
+
 0.18    2010-01-23 12:00
         complete rework to make actions a little less opaque
         linux support added (for PPMs from http://www.wxperl.co.uk)

@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            packtest.pl
 # Description:    simple test for packaging
-# File Revision:  $Id: packtest.pl 35 2010-01-24 08:30:07Z  $
+# File Revision:  $Id: packtest.pl 36 2010-01-24 15:08:53Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson

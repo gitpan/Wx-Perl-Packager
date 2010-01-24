@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager.pm
 # Description:    Assist packaging wxPerl applicatons
-# File Revision:  $Id: Packager.pm 33 2010-01-23 15:18:22Z  $
+# File Revision:  $Id: Packager.pm 37 2010-01-24 17:08:44Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -15,7 +15,7 @@ use warnings;
 require Exporter;
 use base qw( Exporter );
 
-our $VERSION = '0.18';
+our $VERSION = '0.19';
 
 our $_require_overwite = 0;
 our $_debug_print_on   = $ENV{WXPERLPACKAGER_DEBUGPRINT_ON} || 0;
@@ -127,11 +127,9 @@ Wx::Perl::Packager
 
 =head1 VERSION
 
-Version 0.18
+Version 0.19
 
 =head1 SYNOPSIS
-
-    Assist packaging wxPerl applications on Linux (GTK)  and MSWin
     
     For PerlApp/PDK and PAR
     
@@ -148,13 +146,10 @@ Version 0.18
     use threads::shared;
     use Wx::Perl::Packager;
     use Wx;
-
-=head1 TEST
-
-    There is a test script at Wx/Perl/Packager/resource/packtest.pl that you can
-    use to test your packaging method. (i.e. package it);
     
-=head1 DESCRIPTION
+=head1 Description
+
+    Assist packaging wxPerl applications on Linux (GTK)  and MSWin
 
     Wx::Perl::Packager must be loaded before any part of Wx so should appear at the
     top of your main script. If you load any part of Wx in a BEGIN block, then you
@@ -162,12 +157,12 @@ Version 0.18
     you problems if you use threads within your Wx application. The threads
     documentation advises against loading threads in a BEGIN block - so don't do it.
     
-=head2 For PerlApp on MS Windows
+=head1 For PerlApp on MS Windows
     
     putting Wx::Perl:Packager at the top of your script as described above should be
     all that is required for recent versions of PerlApp.
 
-=head2 For PerlApp on Linux
+=head1 For PerlApp on Linux
     
     if you are using the PPMs from http://www.wxperl.co.uk/repository ( add this
     to your repository list), packaging with PerlApp is possible.
@@ -181,8 +176,12 @@ Version 0.18
     'wxmain.so' alongside your wxwidgets modules. This is the current work around
     for a segmentation fault when PerlApp exits. Hopefully there will be
     a better solution soon.  
-    
-=head2 PerlApp General
+
+=head1 For PerlApp on MacOSX
+
+    Coming soon. (Is it needed ?)
+
+=head1 PerlApp General
     
     Wx::Perl::Packager does not support the --dyndll option for PerlApp.
     
@@ -209,24 +208,117 @@ Version 0.18
     The wxpdk utility takes care of this for you for PDK versions less than 8.x
     For PDK versions 8 and above, wxpdk should not be used.
 
-=head2 For PAR
+=head1 For PAR
+    
+    PAR assistant
     
     run 'wxpar' exactly as you would run pp.
-    
+        
     e.g.  wxpar --gui --icon=myicon.ico -o myprog.exe myscript.pl
-    
-    Also provided are:
-    
-    wxpdk (PerlApp version 7.x and below )
-    wxpar
-    
-    which assist in packaging the wxWidgets DLLs.
 
-=head2 Nasty Internals
+    At the start of your script ...
     
-    see comments in Wx:Perl::Packager::Linux
+    #!c:/path/to/perl.exe
+    use Wx::Perl::Packager;
+    use Wx;
+    .....
+    
+    or if you use threads with your application
+    #!c:/path/to/perl.exe
+    use threads;
+    use threads::shared;
+    use Wx::Perl::Packager;
+    use Wx
+    
+    Wx::Perl::Packager must be loaded before any part of Wx so should appear at the
+    top of your main script. If you load any part of Wx in a BEGIN block, then you
+    must load Wx::Perl::Packager before it in your first BEGIN block. This may cause
+    you problems if you use threads within your Wx application. The threads
+    documentation advises against loading threads in a BEGIN block - so don't do it.
+    
+    wxpar will accept a single named argument that allows you to define how the
+    wxWidgets libraries are named on GTK.
+    wxpar ordinarily packages the libraries as wxbase28u_somename.so
+    This will always work if using Wx::Perl::Packager.
+    However, it maybe that you don't want to use Wx::Perl::Packager, in which case
+    you need the correct extension.
+    
+    If you want librararies packaged as wxbase28u_somename.so.0, then pass the first
+    two arguments to wxpar as
+    
+    wxpar wxextension .0
+    
+    If you want wxbase28u_somename.so.0.6.0 , for example
+    
+    wxpar wxextension .0.6.0
+    
+    which would mean a full line something like
+    
+    wxpar wxextension .0.6.0 -o myprog.exe myscript.pl
+    
+    NOTE: the arguments must be FIRST and will break Wx::Perl::Packager (which should
+    not be needed in this case).
+    
+    OF COURSE - the symlinks must actually exist. :-)
 
-=head2 Methods
+=head1 Nasty Internals
+    
+    As Commented in Wx:Perl::Packager::Linux the packager is configured with several
+    options. Mix and match if you think there's a better way.
+    
+    $self->set_so_module_suffix(''); # different linux dists symlink the .so libraries differently
+                                     # BAH. the loaders in Wx::Perl::Packager will look for
+                                     # modules ending in '.so'  - If your modules get packaged
+                                     # differently, put the suffix here.
+                                     # e.g. if your module when packaged is
+                                     # wxlibs_gcc_base.so.0.6.0
+                                     # you should $self->set_so_module_suffix('.0.6.0')
+    
+    $self->set_relocate_pdkcheck(0); # relocate the Wx dlls during PDK Check - never necessary it seems
+    
+    $self->set_relocate_packaged(1); # relocate the Wx Dlls when running as PerlApp
+    
+    $self->set_relocate_wx_main(1);  # if set_relocate_packaged is true and we find 'wxmain.so'
+                                     # as a bound file, we load it as Wx.so ( which it should be
+                                     # if user as bound it). This is the current fix for PerlApp
+                                     # segmentation fault on exit in Linux. Makes no difference
+                                     # in MSWin
+    
+    $self->set_unlink_relocated(1);  # delete the extracted files - ensures relocated are loaded
+    
+    $self->set_loadmode_pdkcheck('packload'); # standard | nullsub | packload  during pdkcheck
+                                              # standard uses normal Wx loading
+                                              # nullsub - no extensions are loaded
+                                              # packload - extensions are loaded by Wx::Perl::Packager
+
+    $self->set_loadmode_packaged('packload');# as above, when running as PerlApp
+    
+    $self->set_loadcore_pdkcheck(1); # use DynaLoader to load wx modules listed by
+                                     # get_core_modules method (below)during pdkcheck
+                                     
+    $self->set_loadcore_packaged(1); # as above, when running as PerlApp
+    
+    $self->set_unload_loaded_core(1);# unload any librefs we loaded
+                                     # (uses DynaLoader in an END block )
+    
+    $self->set_unload_loaded_plugins(1); # unload plugins ( html, stc, gl .. etc) that are
+                                         # loaded via 'packload'. This seems to be necessary
+                                         # to ensure correct unloading order.
+                                         # Note - plugins are loaded using
+                                         # Wx::_load_plugin  (not DynaLoader);
+    
+    $self->set_pdkcheck_exit(1);     # because of the current seg fault on exit in linux
+                                     # you can't package using PerlApp
+                                     # this setting calls 'exit(0)' after
+                                     # Wx has loaded.
+                                     # Drastic - but it is the current hack for this failure on linux
+
+=head1 Packaging Test Script
+
+    There is a test script at Wx/Perl/Packager/resource/packtest.pl that you can
+    use to test your packaging method. (i.e. package it and check if it runs);
+
+=head1 Methods
 
 =item Wx::Perl::Packager::runtime()
 

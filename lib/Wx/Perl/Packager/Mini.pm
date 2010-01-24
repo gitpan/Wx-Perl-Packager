@@ -11,9 +11,12 @@
 package Wx::Perl::Packager::Mini;
 use Carp;
 
+our $VERSION = '0.19';
+
 #########################################################################################
 
-package Wx;
+ package
+     Wx;
 
 no warnings;
 
@@ -34,9 +37,12 @@ sub _start {
 
 package Wx::Perl::Packager::Mini::XSLoader;
 
+our $VERSION = '0.19';
+
 sub loadwx {
     
-    package DynaLoader;
+    package
+       DynaLoader;
     my $wxloadhandler = shift;
     my $file = $wxloadhandler->get_module_core_load_path('wx');
     return 0 unless( $file && -f $file );
