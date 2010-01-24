@@ -3,12 +3,13 @@ MANIFEST
 Makefile.PL
 README
 lib/Wx/Perl/Packager.pm
-lib/Wx/Perl/Packager/PDKWindow.pm
-lib/Wx/Perl/Packager/Utils.pm
-lib/Wx/Perl/Packager/packager.ico
-bin/wxpdk
+lib/Wx/Perl/Packager/Linux.pm
+lib/Wx/Perl/Packager/MacOSX.pm
+lib/Wx/Perl/Packager/Mini.pm
+lib/Wx/Perl/Packager/MSWin.pm
+lib/Wx/Perl/Packager/resource/packtest.pl
+lib/Wx/Perl/Packager/resource/packager.xpm
 bin/wxpar
 t/00-load.t
-t/01-pdk.t
 
 META.yml                                 Module meta-data (added by MakeMaker)

@@ -1,5 +1,10 @@
 Revision history for Wx-Perl-Packager
 
+0.18    2010-01-23 12:00
+        complete rework to make actions a little less opaque
+        linux support added (for PPMs from http://www.wxperl.co.uk)
+        removed obsolete wxpdk
+
 0.16    2010-01-10 12:00
         Updated to work with PDK 8.1 / 8.0.2
         Handle monolithic wxWidgets dlls        

@@ -2,32 +2,17 @@
 
 Wx-Perl-Packager
 
-Version 0.15
+Version 0.18
 
-(c)2006 - 2008 Mark Dootson
+(c)2006 - 2010 Mark Dootson
 
 #########################################################
 
 Package to ease wxPerl application packaging with PAR and 
-PerlApp, PDK and Perl2Exe.
+PerlApp/PDK 
 Just use at top of main script.
 
 use Wx::Perl::Packager;
-
-PDK / PerlApp users are provided with a script called
-wxpdk
-This creates a base .perlapp file with necessary 
-wxWidgets DLL bindings included.
-
-PAR users are provided with a simple wrapper for pp called
-wxpar. 
-This adds the necessary Wx DLLs in the correct place.
-
-eg run :
-wxpar --gui -o myapp.exe myscript.pl
-
-REQUIRES >= Perl 5.8.1
-         >= Wx   0.49
 
 
 INSTALLATION
@@ -39,7 +24,7 @@ To install this module
     make test
     make install
     
-On windows just change to nmake or mingw32-make as required.
+On windows just change to nmake or dmake as required.
 
 
 SUPPORT AND DOCUMENTATION
@@ -54,7 +39,7 @@ You can also look for information at:
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2006,2007, 2008 Mark Dootson
+Copyright (C) 2006 - 2010 Mark Dootson
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

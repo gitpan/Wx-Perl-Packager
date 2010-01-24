@@ -1,22 +1,16 @@
 --- #YAML:1.0
-name:               Wx-Perl-Packager
-version:            0.16
-abstract:           ~
-author:
+name:                Wx-Perl-Packager
+version:             0.18
+abstract:            ~
+license:             ~
+author:              
     - Mark Dootson <mdootson@cpan.org>
-license:            unknown
-distribution_type:  module
-configure_requires:
-    ExtUtils::MakeMaker:  0
-build_requires:
-    ExtUtils::MakeMaker:  0
-requires:
-    Wx:  0.49
-no_index:
-    directory:
-        - t
-        - inc
-generated_by:       ExtUtils::MakeMaker version 6.56
+generated_by:        ExtUtils::MakeMaker version 6.42_01
+distribution_type:   module
+requires:     
+    Class::Accessor:               0
+    Digest::MD5:                   0
+    Wx:                            0.49
 meta-spec:
-    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
-    version:  1.4
+    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
+    version: 1.3

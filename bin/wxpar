@@ -4,7 +4,7 @@
 #
 # Simple assistant for use with wxPerl and PAR
 #
-# Copyright (c) 2006 & 2007 Mark Dootson mdootson@cpan.org
+# Copyright (c) 2006 & 2010 Mark Dootson mdootson@cpan.org
 #
 ############################################################
 
@@ -14,7 +14,7 @@ wxpar
 
 =head1 VERSION
 
-Version 0.15
+Version 0.18
 
 =cut
 
@@ -25,18 +25,12 @@ Version 0.15
     run 'wxpar' exactly as you would run pp.
         
     e.g.  wxpar --gui --icon=myicon.ico -o myprog.exe myscript.pl
-    
-    NOTE: For PAR::Packer, if you are distributing wxWidgets libs with
-    GDI+ support (wxGraphicsContext) and you don't use wxpar, you must
-    distribute gdiplus.dll separately for those Windows operating systems
-    that require it. If you use wxpar and the Alien::wxWidgets PPM's from
-    http://www.wxperl.co.uk/ it is packaged for you and loaded where the
-    operating system requires.
 
     At the start of your script ...
     
     #!c:/path/to/perl.exe
     use Wx::Perl::Packager;
+    use Wx;
     .....
     
     or if you use threads with your application
@@ -44,18 +38,54 @@ Version 0.15
     use threads;
     use threads::shared;
     use Wx::Perl::Packager;
+    use Wx
     
     Wx::Perl::Packager must be loaded before any part of Wx so should appear at the
     top of your main script. If you load any part of Wx in a BEGIN block, then you
     must load Wx::Perl::Packager before it in your first BEGIN block. This may cause
     you problems if you use threads within your Wx application. The threads
     documentation advises against loading threads in a BEGIN block - so don't do it.
- 
+    
+    wxpar will accept a single named argument that allows you to define how the
+    wxWidgets libraries are named on GTK.
+    wxpar ordinarily packages the libraries as wxbase28u_somename.so
+    This will always work if using Wx::Perl::Packager.
+    However, it maybe that you don't want to use Wx::Perl::Packager, in which case
+    you need the correct extension.
+    
+    If you want librararies packaged as wxbase28u_somename.so.0, then pass the first
+    two arguments to wxpar as
+    
+    wxpar wxextension .0
+    
+    If you want wxbase28u_somename.so.0.6.0 , for example
+    
+    wxpar wxextension .0.6.0
+    
+    which would mean a full line something like
+    
+    wxpar wxextension .0.6.0 -o myprog.exe myscript.pl
+    
+    NOTE: the arguments must be FIRST and will break Wx::Perl::Packager (which should
+    not be needed in this case).
+    
+    OF COURSE - the symlinks must actually exist. :-)
+
 
 =cut
 use File::Copy;
 my @args = @ARGV;
-my $VERSION = 0.15;
+my $VERSION = 0.18;
+
+require Win32 if $^O eq 'MSWin32';
+
+my $addextension = '';
+
+if ( $args[0] eq 'wxextension' ) {
+    shift @args;
+    $addextension = shift @args;
+}
+
 
 # get the outputpath, get argfilepath
 my ($i, $ix, $execpath, $argfile );
@@ -97,7 +127,9 @@ my $wxdlls = $Wx::dlls;
 my @fileargs = ();
 
 foreach my $dllname(keys(%$wxdlls)) {
-    my $filepath = $wxdir . '/' . $wxdlls->{$dllname};
+    my $dllfilename = $wxdlls->{$dllname};
+    $dllfilename =~ s/so[0-9\.]*$/so$addextension/;
+    my $filepath = $wxdir . '/' . $dllfilename;
     $filepath =~ s/\\/\//g;
     unshift(@fileargs, qq(-l $filepath));
 }
@@ -112,18 +144,6 @@ if(-f $mingw32dll) {
 # add attributes - always needed by Wx
 
 unshift(@fileargs, qq(-M attributes.pm));
-
-# look for gdiplus lib
-my $gdidir = $wxdir;
-$gdidir =~ s/lib$/os/;
-my $srcgdi = qq($gdidir/gdiplus.dl_);
-mkdir('gdilib', 0777);
-my $targetgdidll = qq(gdilib/gdiplus.dll);
-if(-e $srcgdi ) {
-    File::Copy::copy($srcgdi, $targetgdidll) or die qq(unable to create GDI+ lib: $!);
-    unshift(@fileargs, qq(--addfile $targetgdidll));
-}
-
 
 my $command = 'pp';
 my $arglist = '';
@@ -148,10 +168,9 @@ print qq(\nRunning Command .....\n\n);
 print qq($command $arglist\n);
 print qq(\n .....\n\n);
 
-system($command, @args );
-
-unlink($targetgdidll);
-unlink('gdilib');
+my $fullcommand = qq($command $arglist); 
+#system($command, @args );
+system($fullcommand);
 
 1;
 
