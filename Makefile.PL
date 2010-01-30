@@ -10,6 +10,6 @@ WriteMakefile(
     PREREQ_PM           => { Wx => 0.49, 'Class::Accessor' => 0, 'Digest::MD5' => 0 },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Wx-Perl-Packager-*' },
-    EXE_FILES           => ['bin/wxpdk', 'bin/wxpar'],
+    EXE_FILES           => [ 'bin/wxpar'],
 );
 

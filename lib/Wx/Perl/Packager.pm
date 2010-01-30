@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager.pm
 # Description:    Assist packaging wxPerl applicatons
-# File Revision:  $Id: Packager.pm 37 2010-01-24 17:08:44Z  $
+# File Revision:  $Id: Packager.pm 39 2010-01-27 12:36:42Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -14,8 +14,7 @@ use strict;
 use warnings;
 require Exporter;
 use base qw( Exporter );
-
-our $VERSION = '0.19';
+our $VERSION = '0.20';
 
 our $_require_overwite = 0;
 our $_debug_print_on   = $ENV{WXPERLPACKAGER_DEBUGPRINT_ON} || 0;
@@ -40,7 +39,6 @@ sub _start {
     #-----------------------------------------------  
     
     require Wx::Mini;
-    require Wx::Perl::Packager::Mini;
     
     if ($^O =~ /^mswin/i) {
         require Wx::Perl::Packager::MSWin;
@@ -130,7 +128,7 @@ Wx::Perl::Packager
 Version 0.19
 
 =head1 SYNOPSIS
-    
+
     For PerlApp/PDK and PAR
     
     At the start of your script ...
@@ -146,7 +144,7 @@ Version 0.19
     use threads::shared;
     use Wx::Perl::Packager;
     use Wx;
-    
+
 =head1 Description
 
     Assist packaging wxPerl applications on Linux (GTK)  and MSWin
@@ -156,14 +154,14 @@ Version 0.19
     must load Wx::Perl::Packager before it in your first BEGIN block. This may cause
     you problems if you use threads within your Wx application. The threads
     documentation advises against loading threads in a BEGIN block - so don't do it.
-    
+
 =head1 For PerlApp on MS Windows
-    
+
     putting Wx::Perl:Packager at the top of your script as described above should be
     all that is required for recent versions of PerlApp.
 
 =head1 For PerlApp on Linux
-    
+
     if you are using the PPMs from http://www.wxperl.co.uk/repository ( add this
     to your repository list), packaging with PerlApp is possible.
     
@@ -179,16 +177,43 @@ Version 0.19
 
 =head1 For PerlApp on MacOSX
 
-    Coming soon. (Is it needed ?)
+    The Wx distribution available as a PPM from http://www.wxperl.co.uk/repository ( add this
+    to your repository list), can be packaged using PerlApp and Perl510
+    
+    For MacOSX, Wx::Perl::Packager is not needed, but will give a warning or two if your
+    environment is incorrectly set.
+    
+    For PerlApp packaging and testing, you must set the DYLD_LIBRARY_PATH to the wxWidgets
+    dylib files before running PerlApp. If you have installed PPMS and the PDK in default
+    locations, the two required commands will look like:
+    
+    export DYLD_LIBRARY_PATH=/Users/yourusername/Library/ActivePerl-5.10/lib/auto/Wx/wxPerl.app/Contents/Frameworks
+    /usr/bin/open "/Applications/ActiveState Perl Dev Kit/PerlApp.app/Contents/MacOS/PerlApp"
+    
+    Creating and testing the app will work because you have set the DYLD_LIBRARY_PATH environment variable.
+    
+    Once you have finished working in PerlApp, you will have to make some additions to your created .app .
+    
+    If your new app is located at mydir/myapp.app, the necessary procedure is
+    
+    cd mydir.app/Contents
+    mkdir Frameworks
+    cp -p /Users/yourusername/Library/ActivePerl-5.10/lib/auto/Wx/wxPerl.app/Contents/Frameworks/* Frameworks
+    
+    and that should be it. Your app should now be distributable and run without the need for a DYLD_LIBRARY_PATH
+    
+    This works because the Wx .bundle files and wxWidgets dylib files in the PPM distribution are built to find
+    dependencies relative to the executable that loads them. If you already have a different packaging method that
+    relies on setting DYLD_LIBRARY_PATH at run time, then that too should work without problems. 
 
 =head1 PerlApp General
-    
+
     Wx::Perl::Packager does not support the --dyndll option for PerlApp.
     
     Wx::Perl::Packager does not support the --clean option for PerlApp
     
     Wx::Perl::Packager works with PerlApp by moving the following bound or included
-    wxWidgets files to a separate temp directory:
+    wxWidgets files to a separate temp directory on MSWin and Linux.
     
     base
     core
@@ -209,7 +234,7 @@ Version 0.19
     For PDK versions 8 and above, wxpdk should not be used.
 
 =head1 For PAR
-    
+
     PAR assistant
     
     run 'wxpar' exactly as you would run pp.
@@ -262,7 +287,7 @@ Version 0.19
     OF COURSE - the symlinks must actually exist. :-)
 
 =head1 Nasty Internals
-    
+
     As Commented in Wx:Perl::Packager::Linux the packager is configured with several
     options. Mix and match if you think there's a better way.
     

@@ -17,7 +17,7 @@ use base qw( Class::Accessor );
 use File::Copy;
 use Digest::MD5;
 
-our $VERSION = '0.18';
+our $VERSION = '0.20';
 
 #-------------------------------------
 # Accessors
@@ -31,7 +31,7 @@ __PACKAGE__->mk_accessors( qw( relocate_pdkcheck relocate_packaged
     loadmode_pdkcheck loadmode_packaged loadcore_pdkcheck loadcore_packaged relocateable core_relocated require_overwrite 
     inner_wx_load_path inner_app_extract_path inner_app_relocate_path packaged runtime pdkautopackaged basemodule
     modules unload_loaded_core core_loaded so_module_suffix path_separator pdkcheck_exit unload_loaded_plugins
-    unlink_relocated relocate_wx_main
+    unlink_relocated relocate_wx_main pdkcheck_handle
     ));
 
 #---------------------------------------
@@ -61,6 +61,7 @@ sub new {
         core_loaded         => 0,
         pdkautopackaged     => 0,
         pdkcheck_exit       => 0,
+        pdkcheck_handle     => 0,
         unlink_relocated    => 0,
         path_separator      => ( $^O =~ /^mswin/i ) ? "\\" : '/',
         is_mswin            => ( $^O =~ /^mswin/i ) ? 1 : 0,
@@ -73,6 +74,8 @@ sub new {
         so_module_suffix    => '',
         }
     );
+    $self->debug_print('Initial wx_path is : ' . $self->get_wx_load_path);
+    
     return $self;
 }
 
@@ -93,8 +96,6 @@ sub debug_print {
 
 sub get_core_modules { (qw( base core adv )) }
 
-sub config_system { 1; }
-
 sub configure {
     my ($self, $requireoverwrite) = @_;
     
@@ -114,9 +115,9 @@ sub configure {
         
     $self->debug_print('Runtime ' . $runtime . ' Preparation complete');
     
-    #-----------------------------------------
-    # return here for standard perl
-    #-----------------------------------------
+    #----------------------------------------------------
+    # return here for standard perl before Mini is loaded
+    #----------------------------------------------------
     
     return if $runtime eq 'PERL';
     
@@ -152,13 +153,216 @@ sub configure {
     $self->before_config_return();
 }
 
+sub config_system { 1; }
+
+sub config_modules {
+    my $self = shift;
+    
+    my $modulesuffix = $self->get_so_module_suffix || ''; # module suffix can be undef
+    
+    foreach my $modulekey ( keys (%{ $Wx::dlls })) {
+        if(exists( $Wx::dlls->{$modulekey} ) && $Wx::dlls->{$modulekey}) {
+            
+            $self->get_modules->{$modulekey} =
+                { filename => $Wx::dlls->{$modulekey} . $modulesuffix,
+                  loaded => 0,
+                  libref => undef,
+                  missing_fatal => ( $modulekey =~ /^(base|core|adv)$/ ) ? 1 : 0,
+                };
+            }
+    }
+    
+    my $basemodule = ( exists($self->get_modules->{base}) )
+        
+        ? $self->get_modules->{base}->{filename}
+        : $self->get_modules->{core}->{filename};
+        
+    $self->set_basemodule($basemodule);
+}
+
+sub config_environment {
+    my $self = shift;
+    #------------------------------------------------------------
+    # determine if we are run as script, PAR, PerlApp
+    #------------------------------------------------------------
+    if(my $pdkversion = $PerlApp::VERSION) {
+        # PerlApp::VERSION is definitive for PerlApp
+        my @verparts = split(/\./, $pdkversion);
+        $pdkversion = '';
+        for (@verparts) {
+            $pdkversion .= sprintf("%04d", $_);
+        }
+        $pdkversion =~ s/^0+//;
+        #die q(This version of Wx::Perl::Packager requires PDK version 7.1 or greater) if( $pdkversion < 700010000 );
+        my $execpath = PerlApp::exe();
+        
+        if($execpath =~ /pdkcheck/) {
+            if($self->get_pdkcheck_handle) {
+                $self->set_runtime('PDKCHECK');
+                $self->set_packaged(0);
+            } else {
+                $self->set_runtime('PERL');
+                $self->set_packaged(0);
+            }
+        } else {
+            $self->set_runtime('PERLAPP');
+            $self->set_packaged(1);
+        }
+        
+    } elsif($ENV{PAR_0} && -f($ENV{PAR_0})) {
+        $self->set_runtime('PARLEXE');
+        $self->set_packaged(1);
+    } else {
+        # we are perl - reiterate defaults
+        $self->set_runtime('PERL');
+        $self->set_packaged(0);
+    }
+    #------------------------------------------------------------
+    # set the extract paths and relocate paths
+    #------------------------------------------------------------
+    
+    #------------------------------------
+    # RUNTIME PERL
+    #------------------------------------
+        
+    if($self->get_runtime() eq 'PERL') {
+        $self->set_relocateable(0);
+            
+    #------------------------------------
+    # RUNTIME PERLAPP & PDKCHECK
+    #------------------------------------
+    
+    } elsif($PerlApp::VERSION) {
+        #--------------------------------
+        # IS Wx In the PerlApp::RUNLIB
+        #--------------------------------
+        my $perlappset = 0;
+        my $basemodule = $self->get_basemodule;
+        my $runlib = $PerlApp::RUNLIB;
+        if( $runlib && (-d $PerlApp::RUNLIB )) {
+            my $checkpath = $PerlApp::RUNLIB . '/' . $basemodule;
+            if(-f  $checkpath ) {
+                $self->set_pdkautopackaged(0);
+                $self->set_relocateable(0);
+                $self->set_wx_load_path( $checkpath );
+                $perlappset = 1;
+                
+                # final check
+                die qq(Cannot find directory $checkpath) if !-d $checkpath;
+                
+            }
+        }
+        #--------------------------------
+        # Were Wx modules bound manually
+        #--------------------------------
+        if( !$perlappset ) {
+            my $basefile = PerlApp::extract_bound_file($basemodule);
+            # user packaged
+            if( $basefile ) {
+                if($basefile =~ /^(.*)[\\\/]\Q$basemodule\E$/) {
+                    my $regpath = $1;
+                    die qq(Cannot find directory $regpath) if !-d $regpath;
+                    $self->set_app_extract_path($regpath);
+                    $self->set_wx_load_path($regpath);
+                    $self->set_relocateable(1);
+                    $self->set_pdkautopackaged(0);
+                    $perlappset = 1;
+                    # final check
+                }
+        #------------------------------------------
+        # OR Were Wx modules bound by PDK heuristic
+        #------------------------------------------
+            } else {
+            # perlapp packaged (we hope )
+                $self->set_pdkautopackaged(1);
+                #-------------------------------------------------
+                #  see if user has packaged wxmain.dll
+                #-------------------------------------------------
+                {
+                    my $wxmainfile = $self->get_module_filename('wx');
+                    my $dllfile = PerlApp::extract_bound_file($wxmainfile);
+                    if($dllfile && -f $dllfile) {
+                        if($dllfile =~ /^(.*)[\\\/]\Q$wxmainfile\E$/) {
+                            my $regpath = $1;
+                            die qq(Cannot find directory $regpath) if !-d $regpath;
+                            $self->set_app_extract_path($regpath);
+                            $self->set_wx_load_path($regpath);
+                            $self->set_relocateable(1);
+                            $perlappset = 1;
+                            
+                        }
+                    }
+                }
+                if(!$perlappset) {
+                #-------------------------------------------------
+                # user may also set a marker 'wxextractmarker'
+                #-------------------------------------------------
+                    my $markerfile = PerlApp::extract_bound_file('wxextractmarker');
+                    if($markerfile && -f $markerfile) {
+                        if($markerfile =~ /^(.*)[\\\/]wxextractmarker$/) {
+                            my $regpath = $1;
+                            die qq(Cannot find directory $regpath) if !-d $regpath;
+                            $self->set_app_extract_path($regpath);
+                            $self->set_wx_load_path($regpath);
+                            $self->set_relocateable(1);
+                            $perlappset = 1;
+                        }
+                    }
+                }
+                if(!$perlappset) {
+                #-------------------------------------------------
+                # No handy marker :-(
+                #-------------------------------------------------
+                    # check the first item in the path
+                    # if author has placed Wx::Perl::Packager at start of
+                    # script, that is where it will be.
+                    # we will limit search to one level of
+                    # path as unexpected stuff may (will) happen
+                    # if we traverse further
+            
+                    my $delim = $self->get_path_delim();
+                    my @envpaths = split(/$delim/, $ENV{PATH});
+                    my $pdkdirpath = shift @envpaths;
+                    $pdkdirpath =~ s/\\/\//g;
+                    $pdkdirpath =~ s/\/$//;
+                    my $fpath = qq($pdkdirpath/$basemodule);
+                    if($fpath && (-f $fpath)) {
+                        $self->set_relocateable(1);
+                        $perlappset = 1;
+                        $self->set_app_extract_path($pdkdirpath);
+                        $self->set_wx_load_path($pdkdirpath);
+                    }
+                }
+            }
+        }
+    #------------------------------------
+    # RUNTIME PARLEXE
+    #------------------------------------
+    
+    } elsif($self->get_runtime() eq 'PARLEXE') {
+        $self->set_relocateable(0);
+        # the extract path we get from PAR
+        # could be wxlib + module
+        # or just module
+        my @ldpath = split(/[\\\/]/, $ENV{PAR_0});
+        pop(@ldpath);
+        my $loadpath = join('/', @ldpath);
+        $self->set_app_extract_path($loadpath);
+        $self->set_wx_load_path($loadpath);
+        my $currentsuffix = $self->get_so_module_suffix;
+        $self->set_so_module_suffix('.0') if not defined($currentsuffix);
+    }
+}
+
 sub before_config_return { 1; }
 
 sub prepare_perl { 1; };
 
 sub prepare_pdkcheck { 1;}
 
-sub prepare_perlapp { 1;}
+sub prepare_perlapp {
+    require Wx::Perl::Packager::Mini;
+}
 
 sub prepare_parlexe { 1;}
 
@@ -405,31 +609,6 @@ sub get_module_core_load_path {
         return undef;
     }
 }
-
-sub config_modules {
-    my $self = shift;
-    
-    my $modulesuffix = $self->get_so_module_suffix || ''; # module suffix can be undef
-    
-    foreach my $modulekey ( keys (%{ $Wx::dlls })) {
-        if(exists( $Wx::dlls->{$modulekey} ) && $Wx::dlls->{$modulekey}) {
-            
-            $self->get_modules->{$modulekey} =
-                { filename => $Wx::dlls->{$modulekey} . $modulesuffix,
-                  loaded => 0,
-                  libref => undef,
-                  missing_fatal => ( $modulekey =~ /^(base|core|adv)$/ ) ? 1 : 0,
-                };
-            }
-    }
-    
-    my $basemodule = ( exists($self->get_modules->{base}) )
-        
-        ? $self->get_modules->{base}->{filename}
-        : $self->get_modules->{core}->{filename};
-        
-    $self->set_basemodule($basemodule);
-}
     
 sub setsys_filepath {
     my($self, $filepath) = @_;
@@ -437,174 +616,6 @@ sub setsys_filepath {
     return $filepath;
 }
 
-sub config_environment {
-    my $self = shift;
-    #------------------------------------------------------------
-    # determine if we are run as script, PAR, PerlApp
-    #------------------------------------------------------------
-    if(my $pdkversion = $PerlApp::VERSION) {
-        # PerlApp::VERSION is definitive for PerlApp
-        my @verparts = split(/\./, $pdkversion);
-        $pdkversion = '';
-        for (@verparts) {
-            $pdkversion .= sprintf("%04d", $_);
-        }
-        $pdkversion =~ s/^0+//;
-        #die q(This version of Wx::Perl::Packager requires PDK version 7.1 or greater) if( $pdkversion < 700010000 );
-        my $execpath = PerlApp::exe();
-        
-        if($execpath =~ /pdkcheck/) {
-            $self->set_runtime('PDKCHECK');
-            $self->set_packaged(0);
-        } else {
-            $self->set_runtime('PERLAPP');
-            $self->set_packaged(1);
-        }
-        
-    } elsif($ENV{PAR_0} && -f($ENV{PAR_0})) {
-        $self->set_runtime('PARLEXE');
-        $self->set_packaged(1);
-    } else {
-        # we are perl - reiterate defaults
-        $self->set_runtime('PERL');
-        $self->set_packaged(0);
-    }
-    #------------------------------------------------------------
-    # set the extract paths and relocate paths
-    #------------------------------------------------------------
-    
-    #------------------------------------
-    # RUNTIME PERL
-    #------------------------------------
-        
-    if($self->get_runtime() eq 'PERL') {
-        $self->set_relocateable(0);
-            
-    #------------------------------------
-    # RUNTIME PERLAPP & PDKCHECK
-    #------------------------------------
-    
-    } elsif($PerlApp::VERSION) {
-        #--------------------------------
-        # IS Wx In the PerlApp::RUNLIB
-        #--------------------------------
-        my $perlappset = 0;
-        my $basemodule = $self->get_basemodule;
-        my $runlib = $PerlApp::RUNLIB;
-        if( $runlib && (-d $PerlApp::RUNLIB )) {
-            my $checkpath = $PerlApp::RUNLIB . '/' . $basemodule;
-            if(-f  $checkpath ) {
-                $self->set_pdkautopackaged(0);
-                $self->set_relocateable(0);
-                $self->set_wx_load_path( $checkpath );
-                $perlappset = 1;
-                
-                # final check
-                die qq(Cannot find directory $checkpath) if !-d $checkpath;
-                
-            }
-        }
-        #--------------------------------
-        # Were Wx modules bound manually
-        #--------------------------------
-        if( !$perlappset ) {
-            my $basefile = PerlApp::extract_bound_file($basemodule);
-            # user packaged
-            if( $basefile ) {
-                if($basefile =~ /^(.*)[\\\/]\Q$basemodule\E$/) {
-                    my $regpath = $1;
-                    die qq(Cannot find directory $regpath) if !-d $regpath;
-                    $self->set_app_extract_path($regpath);
-                    $self->set_wx_load_path($regpath);
-                    $self->set_relocateable(1);
-                    $self->set_pdkautopackaged(0);
-                    $perlappset = 1;
-                    # final check
-                }
-        #------------------------------------------
-        # OR Were Wx modules bound by PDK heuristic
-        #------------------------------------------
-            } else {
-            # perlapp packaged (we hope )
-                $self->set_pdkautopackaged(1);
-                #-------------------------------------------------
-                #  see if user has packaged wxmain.dll
-                #-------------------------------------------------
-                {
-                    my $wxmainfile = $self->get_module_filename('wx');
-                    my $dllfile = PerlApp::extract_bound_file($wxmainfile);
-                    if($dllfile && -f $dllfile) {
-                        if($dllfile =~ /^(.*)[\\\/]\Q$wxmainfile\E$/) {
-                            my $regpath = $1;
-                            die qq(Cannot find directory $regpath) if !-d $regpath;
-                            $self->set_app_extract_path($regpath);
-                            $self->set_wx_load_path($regpath);
-                            $self->set_relocateable(1);
-                            $perlappset = 1;
-                            
-                        }
-                    }
-                }
-                if(!$perlappset) {
-                #-------------------------------------------------
-                # user may also set a marker 'wxextractmarker'
-                #-------------------------------------------------
-                    my $markerfile = PerlApp::extract_bound_file('wxextractmarker');
-                    if($markerfile && -f $markerfile) {
-                        if($markerfile =~ /^(.*)[\\\/]wxextractmarker$/) {
-                            my $regpath = $1;
-                            die qq(Cannot find directory $regpath) if !-d $regpath;
-                            $self->set_app_extract_path($regpath);
-                            $self->set_wx_load_path($regpath);
-                            $self->set_relocateable(1);
-                            $perlappset = 1;
-                        }
-                    }
-                }
-                if(!$perlappset) {
-                #-------------------------------------------------
-                # No handy marker :-(
-                #-------------------------------------------------
-                    # check the first item in the path
-                    # if author has placed Wx::Perl::Packager at start of
-                    # script, that is where it will be.
-                    # we will limit search to one level of
-                    # path as unexpected stuff may (will) happen
-                    # if we traverse further
-            
-                    my $delim = $self->get_path_delim();
-                    my @envpaths = split(/$delim/, $ENV{PATH});
-                    my $pdkdirpath = shift @envpaths;
-                    $pdkdirpath =~ s/\\/\//g;
-                    $pdkdirpath =~ s/\/$//;
-                    my $fpath = qq($pdkdirpath/$basemodule);
-                    if($fpath && (-f $fpath)) {
-                        $self->set_relocateable(1);
-                        $perlappset = 1;
-                        $self->set_app_extract_path($pdkdirpath);
-                        $self->set_wx_load_path($pdkdirpath);
-                    }
-                }
-            }
-        }
-    #------------------------------------
-    # RUNTIME PARLEXE
-    #------------------------------------
-    
-    } elsif($self->get_runtime() eq 'PARLEXE') {
-        $self->set_relocateable(0);
-        # the extract path we get from PAR
-        # could be wxlib + module
-        # or just module
-        my @ldpath = split(/[\\\/]/, $ENV{PAR_0});
-        pop(@ldpath);
-        my $loadpath = join('/', @ldpath);
-        $self->set_app_extract_path($loadpath);
-        $self->set_wx_load_path($loadpath);
-        my $currentsuffix = $self->get_so_module_suffix;
-        $self->set_so_module_suffix('.0') if not defined($currentsuffix);
-    }
-}
 
 #------------------------------------------
 # If we have no alternative but to relocate

@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            packtest.pl
 # Description:    simple test for packaging
-# File Revision:  $Id: packtest.pl 36 2010-01-24 15:08:53Z  $
+# File Revision:  $Id: packtest.pl 39 2010-01-27 12:36:42Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -14,13 +14,13 @@
 BEGIN {
     my $checkargs = join('', @ARGV);
     $ENV{WXPERLPACKAGER_DEBUGPRINT_ON} = 1 if $checkargs =~ /debug/i;
+    $ENV{WXPERLPACKAGER_DEBUGPRINT_ON} = 1;
 }
 
 use threads;
-use Wx::Perl::Packager 0.18;
+use Wx::Perl::Packager 0.20;
 use strict;
 use warnings;
-
 
 #############################################################
 # App
@@ -254,6 +254,8 @@ sub new {
 rmtree ON EXIT IN PDK FOR MSWIN
 IF YOU DON'T INTERACT WITH THE
 KEYBOARD, rmtree works anyway
+
+PACKTEST version 0.20
 
 use strict;
 use warnings;

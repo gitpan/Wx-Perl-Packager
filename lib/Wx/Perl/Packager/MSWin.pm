@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager/MSWin.pm
 # Description:    module for MSWin specific handlers
-# File Revision:  $Id: MSWin.pm 35 2010-01-24 08:30:07Z  $
+# File Revision:  $Id: MSWin.pm 39 2010-01-27 12:36:42Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -15,7 +15,7 @@ use base qw(  Wx::Perl::Packager::Base );
 use Win32;
 use Win32::File;
 
-our $VERSION = '0.18';
+our $VERSION = '0.20';
 
 sub new {
     my $class = shift;
@@ -71,7 +71,12 @@ sub config_system {
                                      # you can't package using PerlApp
                                      # setting this to '1' calls 'exit(0)' after
                                      # Wx has loaded during pdkcheck
-                                     # Drastic - but it is the current hack for this failure on linux                                     
+                                     # Drastic - but it is the current hack for this failure on linux
+    
+    $self->set_pdkcheck_handle(1);   # if true, use special handling during pdkcheck
+                                     # if false, treat as standard perl ( all other pdkcheck
+                                     # options are ignored)
+    
     $self->SUPER::config_system;
 }
 

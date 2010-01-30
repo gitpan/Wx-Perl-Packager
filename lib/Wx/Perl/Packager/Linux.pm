@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager/Linux.pm
 # Description:    module for Linux specific handlers
-# File Revision:  $Id: Linux.pm 36 2010-01-24 15:08:53Z  $
+# File Revision:  $Id: Linux.pm 39 2010-01-27 12:36:42Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -13,7 +13,7 @@ use warnings;
 require Wx::Perl::Packager::Base;
 use base qw(  Wx::Perl::Packager::Base );
 
-our $VERSION = '0.18';
+our $VERSION = '0.20';
 
 sub new {
     my $class = shift;
@@ -80,11 +80,15 @@ sub config_system {
                                          # Note - plugins are loaded using
                                          # Wx::_load_plugin  (not DynaLoader);
     
-    $self->set_pdkcheck_exit(1);     # because of the current seg fault on exit in linux
+    $self->set_pdkcheck_exit(1);     # because of the current fault on exit in linux
                                      # you can't package using PerlApp
                                      # this setting calls 'exit(0)' after
                                      # Wx has loaded.
                                      # Drastic - but it is the current hack for this failure on linux
+    
+    $self->set_pdkcheck_handle(1);   # if true, use special handling during pdkcheck
+                                     # if false, treat as standard perl ( all other pdkcheck
+                                     # options are ignored)
     
     $self->SUPER::config_system;
 }

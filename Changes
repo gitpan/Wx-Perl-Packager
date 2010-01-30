@@ -1,5 +1,9 @@
 Revision history for Wx-Perl-Packager
 
+0.20    2010-01-30 00:00
+        Added notes for MacOSX packaging
+        minor improvements for linux and mswin
+
 0.19    2010-01-23 23:00
         Release 18 broken (missing modules)
 
