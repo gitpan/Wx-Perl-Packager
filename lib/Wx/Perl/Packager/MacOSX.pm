@@ -13,13 +13,21 @@ use warnings;
 require Wx::Perl::Packager::Base;
 use base qw(  Wx::Perl::Packager::Base );
 
-our $VERSION = '0.21';
+our $VERSION = '0.22';
 
 sub new {
     my $class = shift;
     my $self = $class->SUPER::new( @_ );
     
     return $self;
+}
+
+sub config_modules {
+    my $self = shift;
+    
+    $self->get_modules->{wx}      = { filename => 'wxmain.bundle', loaded => 0, libref => undef, missing_fatal => 0 };
+    
+    $self->SUPER::config_modules;
 }
 
 sub config_system {
@@ -34,9 +42,9 @@ sub config_system {
     
     $self->set_relocate_pdkcheck(0); # relocate the Wx dlls during PDK Check - never necessary it seems
     
-    $self->set_relocate_packaged(0); # relocate the Wx Dlls when running as PerlApp
+    $self->set_relocate_packaged(1); # relocate the Wx Dlls when running as PerlApp
     
-    $self->set_relocate_wx_main(0);  # if set_relocate_packaged is true and we find 'wxmain.dll'
+    $self->set_relocate_wx_main(1);  # if set_relocate_packaged is true and we find 'wxmain.dll'
                                      # as a bound file, we load it as Wx.dll ( which it should be
                                      # if user as bound it). This is the current fix for PerlApp
                                      # segmentation fault on exit in Linux. Makes no difference
@@ -85,7 +93,7 @@ sub prepare_pdkcheck {
 }
 
 sub prepare_perlapp {
-    1;
+    require Wx::Perl::Packager::Mini;
 }
 
 1;

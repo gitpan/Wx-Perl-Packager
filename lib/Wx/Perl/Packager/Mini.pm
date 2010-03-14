@@ -11,7 +11,7 @@
 package Wx::Perl::Packager::Mini;
 use Carp;
 
-our $VERSION = '0.21';
+our $VERSION = '0.22';
 
 #########################################################################################
 
@@ -22,6 +22,7 @@ no warnings;
 
 sub _start {
     warnings;
+    &Wx::_init_binary_loader;
     my $_xs_version = $Wx::XS_VERSION;
     if ( my $handler = $Wx::Perl::Packager::handler ) {
         my $result = Wx::Perl::Packager::Mini::XSLoader::loadwx($handler, 'Wx', $_xs_version);
@@ -37,7 +38,7 @@ sub _start {
 
 package Wx::Perl::Packager::Mini::XSLoader;
 
-our $VERSION = '0.20';
+our $VERSION = '0.22';
 
 sub loadwx {
     

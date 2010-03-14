@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager.pm
 # Description:    Assist packaging wxPerl applicatons
-# File Revision:  $Id: Packager.pm 41 2010-03-13 22:37:13Z  $
+# File Revision:  $Id: Packager.pm 42 2010-03-14 00:43:10Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -14,7 +14,7 @@ use strict;
 use warnings;
 require Exporter;
 use base qw( Exporter );
-our $VERSION = '0.21';
+our $VERSION = '0.22';
 use Wx::Mini;
 
 our $_require_overwite = 0;
@@ -124,7 +124,7 @@ Wx::Perl::Packager
 
 =head1 VERSION
 
-Version 0.21
+Version 0.22
 
 =head1 SYNOPSIS
 
@@ -203,7 +203,14 @@ Version 0.21
     
     This works because the Wx .bundle files and wxWidgets dylib files in the PPM distribution are built to find
     dependencies relative to the executable that loads them. If you already have a different packaging method that
-    relies on setting DYLD_LIBRARY_PATH at run time, then that too should work without problems. 
+    relies on setting DYLD_LIBRARY_PATH at run time, then that too should work without problems.
+    
+    When run on some MacOSX version / architecture combinations (behaviour has been noted on a MacOSX 10.4 G4 ppc machine)
+    your PerlApp application may cause error dialogs on exit ("Application Quit Unexpectedly")
+    
+    You can fix this by binding the Wx.bundle file as wxmain.bundle. That is, bind
+    pathtoyourppminstall/site/lib/auto/Wx/Wx.bundle as
+    wxmain.bundle
 
 =head1 PerlApp General
 

@@ -17,7 +17,7 @@ use base qw( Class::Accessor );
 use File::Copy;
 use Digest::MD5;
 
-our $VERSION = '0.21';
+our $VERSION = '0.22';
 
 #-------------------------------------
 # Accessors
@@ -280,8 +280,10 @@ sub config_environment {
                 #-------------------------------------------------
                 {
                     my $wxmainfile = $self->get_module_filename('wx');
+                    $self->debug_print(qq(Module Mainfile Path is $wxmainfile));
                     my $dllfile = PerlApp::extract_bound_file($wxmainfile);
                     if($dllfile && -f $dllfile) {
+                        $self->debug_print(qq(Module Mainfile FilePath is $dllfile));
                         if($dllfile =~ /^(.*)[\\\/]\Q$wxmainfile\E$/) {
                             my $regpath = $1;
                             die qq(Cannot find directory $regpath) if !-d $regpath;

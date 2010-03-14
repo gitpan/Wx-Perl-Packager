@@ -1,5 +1,9 @@
 Revision history for Wx-Perl-Packager
 
+0.22    2010-03-13 01:00
+        Implemented MacOSX 10.4 / ppc arch workaround
+        for errors on exit
+
 0.21    2010-03-13 00:00
         Linux Build fixed
         POD updated for MacOSX
