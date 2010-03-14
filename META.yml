@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Wx-Perl-Packager
-version:            0.20
+version:            0.21
 abstract:           ~
 author:
     - Mark Dootson <mdootson@cpan.org>

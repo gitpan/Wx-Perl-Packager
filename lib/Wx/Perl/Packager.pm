@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager.pm
 # Description:    Assist packaging wxPerl applicatons
-# File Revision:  $Id: Packager.pm 39 2010-01-27 12:36:42Z  $
+# File Revision:  $Id: Packager.pm 41 2010-03-13 22:37:13Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -14,7 +14,8 @@ use strict;
 use warnings;
 require Exporter;
 use base qw( Exporter );
-our $VERSION = '0.20';
+our $VERSION = '0.21';
+use Wx::Mini;
 
 our $_require_overwite = 0;
 our $_debug_print_on   = $ENV{WXPERLPACKAGER_DEBUGPRINT_ON} || 0;
@@ -37,8 +38,6 @@ sub _start {
     #-----------------------------------------------
     # Main Handling
     #-----------------------------------------------  
-    
-    require Wx::Mini;
     
     if ($^O =~ /^mswin/i) {
         require Wx::Perl::Packager::MSWin;
@@ -125,7 +124,7 @@ Wx::Perl::Packager
 
 =head1 VERSION
 
-Version 0.19
+Version 0.21
 
 =head1 SYNOPSIS
 
@@ -166,8 +165,8 @@ Version 0.19
     to your repository list), packaging with PerlApp is possible.
     
     You must add each wxWidgets dll that you use as a bound file.
-    e.g. <perlpath>/site/lib/Alien../wxbase28u_somename.so
-    should be bound simply as 'wxbase28u_somename.so' and should be
+    e.g. <perlpath>/site/lib/Alien../wxbase28u_somename.so.0
+    should be bound simply as 'wxbase28u_somename.so.0' and should be
     set to extract automatically.
     
     YOU MUST also bind <perlpath>/site/lib/auto/Wx/Wx.so as
@@ -188,7 +187,7 @@ Version 0.19
     locations, the two required commands will look like:
     
     export DYLD_LIBRARY_PATH=/Users/yourusername/Library/ActivePerl-5.10/lib/auto/Wx/wxPerl.app/Contents/Frameworks
-    /usr/bin/open "/Applications/ActiveState Perl Dev Kit/PerlApp.app/Contents/MacOS/PerlApp"
+    /usr/bin/open "/Applications/ActiveState Perl Dev Kit/PerlApp.app"
     
     Creating and testing the app will work because you have set the DYLD_LIBRARY_PATH environment variable.
     
@@ -424,4 +423,3 @@ under the same terms as Perl itself.
 # End of Wx::Perl::Packager
 
 __END__
-

@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager/Linux.pm
 # Description:    module for Linux specific handlers
-# File Revision:  $Id: Linux.pm 39 2010-01-27 12:36:42Z  $
+# File Revision:  $Id: Linux.pm 41 2010-03-13 22:37:13Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -13,7 +13,7 @@ use warnings;
 require Wx::Perl::Packager::Base;
 use base qw(  Wx::Perl::Packager::Base );
 
-our $VERSION = '0.20';
+our $VERSION = '0.21';
 
 sub new {
     my $class = shift;
@@ -39,7 +39,7 @@ sub config_modules {
 sub config_system {
     my $self = shift;
     
-    $self->set_so_module_suffix(''); # different linux dists symlink the .so libraries differently
+    $self->set_so_module_suffix('.0'); # different linux dists symlink the .so libraries differently
                                      # BAH. the loaders in Wx::Perl::Packager will look for
                                      # modules ending in '.so'  - If your modules get packaged
                                      # differently, put the suffix here.

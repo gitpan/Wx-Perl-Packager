@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager/Base.pm
 # Description:    base module for OS specific handlers
-# File Revision:  $Id: Base.pm 36 2010-01-24 15:08:53Z  $
+# File Revision:  $Id: Base.pm 41 2010-03-13 22:37:13Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -17,7 +17,7 @@ use base qw( Class::Accessor );
 use File::Copy;
 use Digest::MD5;
 
-our $VERSION = '0.20';
+our $VERSION = '0.21';
 
 #-------------------------------------
 # Accessors
@@ -412,21 +412,19 @@ sub relocate_wx {
     
 }
 
-sub run_wx_start {
+sub do_core_load {
     my $self = shift;
     my $runtime = $self->get_runtime;
     my $coreload = 0;
-    my $method = 'standard';
-    
     if($runtime eq 'PDKCHECK') {
         $coreload = $self->get_loadcore_pdkcheck;
-        $method = $self->get_loadmode_pdkcheck;   
+        
     } elsif ($runtime eq 'PERLAPP') {
         $coreload = $self->get_loadcore_packaged;
-        $method = $self->get_loadmode_packaged;
+        
     } elsif ($runtime eq 'PARLEXE') {
         $coreload = $self->get_loadcore_packaged;
-        $method = $self->get_loadmode_packaged;
+        
     }
     
     $self->debug_print(qq(Core Load = $coreload));
@@ -451,6 +449,26 @@ sub run_wx_start {
         }
         $self->set_core_loaded(1);
     }
+}
+
+sub run_wx_start {
+    my $self = shift;
+
+    $self->do_core_load;
+    
+    my $runtime = $self->get_runtime;
+    my $method = 'standard';
+    
+    if($runtime eq 'PDKCHECK') {
+        
+        $method = $self->get_loadmode_pdkcheck;   
+    } elsif ($runtime eq 'PERLAPP') {
+        
+        $method = $self->get_loadmode_packaged;
+    } elsif ($runtime eq 'PARLEXE') {
+        
+        $method = $self->get_loadmode_packaged;
+    }
     
     $self->debug_print(qq(Load Method = $method));
     
@@ -463,11 +481,10 @@ sub run_wx_start {
     my @loadedmodules = ();
 
     #---------------------------------
-    # LOAD Wx
+    # start Wx
+    #---------------------------------
     
     require Wx;
-    
-    #---------------------------------
     
     if( $method eq 'packload' ){
         Wx::set_load_function( sub { my $modulekey = shift;
@@ -478,7 +495,7 @@ sub run_wx_start {
                         
                         my $filepath = $self->get_module_wx_load_path($modulekey);
                         $self->debug_print(qq(Loading Plugin $modulekey from $filepath\n));
-                        Wx::_load_file( $filepath );
+                        Wx::_load_plugin( $filepath );
                         push( @loadedmodules, $filepath);
                         
                         $module->{loaded} = 1;
@@ -665,7 +682,5 @@ sub config_relocate_path {
     
     $self->set_app_relocate_path($apprunpath);
 }
-
-
 
 1;

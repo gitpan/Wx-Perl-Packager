@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager/MacOSX.pm
 # Description:    module for MacOSX specific handlers
-# File Revision:  $Id: MacOSX.pm 39 2010-01-27 12:36:42Z  $
+# File Revision:  $Id: MacOSX.pm 41 2010-03-13 22:37:13Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -13,7 +13,7 @@ use warnings;
 require Wx::Perl::Packager::Base;
 use base qw(  Wx::Perl::Packager::Base );
 
-our $VERSION = '0.20';
+our $VERSION = '0.21';
 
 sub new {
     my $class = shift;
@@ -81,10 +81,11 @@ sub config_system {
 
 sub prepare_pdkcheck {
     my $self = shift;
-    
+    die qq(You must set DYLD_LIBRARY_PATH to include the path to wxWidgets dlls before running PerlApp) if not exists($ENV{DYLD_LIBRARY_PATH});
+}
 
-   die qq(You must set DYLD_LIBRARY_PATH to include the path to wxWidgets dlls before running PerlApp) if not exists($ENV{DYLD_LIBRARY_PATH});
-
+sub prepare_perlapp {
+    1;
 }
 
 1;
