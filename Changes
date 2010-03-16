@@ -1,5 +1,10 @@
 Revision history for Wx-Perl-Packager
 
+0.23    2010-03-16 00:00
+        Fixes for MSWin32 64 bit Wx builds
+        Better unique keys for wx temp path
+        Various documentation updates
+
 0.22    2010-03-13 01:00
         Implemented MacOSX 10.4 / ppc arch workaround
         for errors on exit

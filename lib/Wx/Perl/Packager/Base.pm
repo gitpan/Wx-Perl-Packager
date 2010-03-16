@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager/Base.pm
 # Description:    base module for OS specific handlers
-# File Revision:  $Id: Base.pm 41 2010-03-13 22:37:13Z  $
+# File Revision:  $Id: Base.pm 45 2010-03-16 12:35:51Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -17,7 +17,7 @@ use base qw( Class::Accessor );
 use File::Copy;
 use Digest::MD5;
 
-our $VERSION = '0.22';
+our $VERSION = '0.23';
 
 #-------------------------------------
 # Accessors
@@ -648,8 +648,8 @@ sub config_relocate_path {
     # app extract path is writable by us - so create our wxlib extract
     # files side by side
     
-    my $apprunpath = $self->get_app_extract_path();
-    die qq(error in determining extract paths) if !-d $apprunpath;
+    my $appextractpath = $self->get_app_extract_path();
+    die qq(error in determining extract paths) if !-d $appextractpath;
     
     # determine where the standard PDK path is
     
@@ -666,7 +666,10 @@ sub config_relocate_path {
         my $ctx = Digest::MD5->new;
         my $exec = PerlApp::exe();
         $ctx->add( $exec  );
-        $ctx->add( 'fixed data' );
+        my $statfile = $appextractpath . '/' . $self->get_basemodule();
+        $self->debug_print(qq(Base Core extracted module = $statfile));
+        my $filestat = (-f $statfile ) ? (stat($statfile))[7]: 'fixed data';
+        $ctx->add( $filestat );
         $apprelocatedir = $ctx->hexdigest;
         
     }   elsif( $runtime eq 'PDKCHECK' ) {
@@ -675,9 +678,9 @@ sub config_relocate_path {
     }
     
     # build the directories
-    my @paths = split(/[\/\\]/, $apprunpath);
+    my @paths = split(/[\/\\]/, $appextractpath);
     pop(@paths);
-    $apprunpath = join('/', (@paths, $toplevel));
+    my $apprunpath = join('/', (@paths, $toplevel));
     mkdir($apprunpath, 0700) if !-d $apprunpath;
     $apprunpath .= '/' . $apprelocatedir;
     mkdir($apprunpath, 0700) if !-d $apprunpath;

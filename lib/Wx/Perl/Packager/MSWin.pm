@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager/MSWin.pm
 # Description:    module for MSWin specific handlers
-# File Revision:  $Id: MSWin.pm 41 2010-03-13 22:37:13Z  $
+# File Revision:  $Id: MSWin.pm 44 2010-03-16 09:16:31Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -15,7 +15,7 @@ use base qw(  Wx::Perl::Packager::Base );
 use Win32;
 use Win32::File;
 
-our $VERSION = '0.22';
+our $VERSION = '0.23';
 
 sub new {
     my $class = shift;
@@ -80,10 +80,6 @@ sub config_system {
     $self->SUPER::config_system;
 }
 
-sub prepare_pdkcheck {
-    my $self = shift;
-    $ENV{PATH} = $self->get_wx_load_path . ';' . $ENV{PATH};
-}
 
 sub delete_file {
     my( $self, $target) = @_;
@@ -122,5 +118,43 @@ sub setsys_filepath {
     $filepath = Win32::GetLongPathName($filepath) || $filepath;
     return $filepath;
 }
+
+sub prepare_perl {
+    my $self = shift;
+    $self->_set_mingwdll( $self->get_wx_load_path );
+};
+
+sub prepare_pdkcheck {
+    my $self = shift;
+    $self->_set_mingwdll( $self->get_wx_load_path );
+    $ENV{PATH} = $self->get_wx_load_path . ';' . $ENV{PATH};
+    
+    # mingw-w64 built Wx will fault on pdkcheck exit ?
+    my $mdll = $self->get_modules->{mingw}->{filename};
+    if($mdll =~ /^libgcc/) {
+    	$self->set_pdkcheck_exit(1);
+    }
+}
+
+sub prepare_perlapp {
+    my $self = shift;
+    require Wx::Perl::Packager::Mini;
+    $self->_set_mingwdll( $self->get_app_extract_path );
+}
+
+sub _set_mingwdll {
+    my($self, $dir) = @_;
+    my $defaultmingw = 'mingwm10.dll';
+    opendir(MYWXDIR, $dir) or die qq(Unable to open directory $dir : $!);
+    my @mingfiles = grep { /^libgcc_/ } readdir(MYWXDIR);
+    closedir(MYWXDIR);
+    if($mingfiles[0] && (-f qq($dir/$mingfiles[0]))) {
+        $defaultmingw = $mingfiles[0];
+    }
+    $self->debug_print(qq(mingw runtime is $defaultmingw));
+    $self->get_modules->{mingw}->{filename} = $defaultmingw;
+}
+
+
 
 1;

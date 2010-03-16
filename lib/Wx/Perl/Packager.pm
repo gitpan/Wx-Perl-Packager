@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager.pm
 # Description:    Assist packaging wxPerl applicatons
-# File Revision:  $Id: Packager.pm 42 2010-03-14 00:43:10Z  $
+# File Revision:  $Id: Packager.pm 45 2010-03-16 12:35:51Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -14,7 +14,7 @@ use strict;
 use warnings;
 require Exporter;
 use base qw( Exporter );
-our $VERSION = '0.22';
+our $VERSION = '0.23';
 use Wx::Mini;
 
 our $_require_overwite = 0;
@@ -124,7 +124,7 @@ Wx::Perl::Packager
 
 =head1 VERSION
 
-Version 0.22
+Version 0.23
 
 =head1 SYNOPSIS
 
@@ -156,9 +156,30 @@ Version 0.22
 
 =head1 For PerlApp on MS Windows
 
-    putting Wx::Perl:Packager at the top of your script as described above should be
-    all that is required for recent versions of PerlApp.
-
+    putting Wx::Perl:Packager at the top of your script as described above may be
+    all that is required for recent versions of PerlApp. However, using an x64
+    64 bit version on PerlApp and 64 bit Wx PPMs, you may encounter a fault on exit
+    when closing the application. This will be apparant when testing the app. You can
+    work around this by binding the Wx.dll file as wxmain.dll. That is:
+    
+    bind somepath..../auto/Wx/Wx.dll
+      as
+    wxmain.dll
+    
+    This will fix this issue.
+    
+    Note that PerlApp 8.0 and greater may report incorrect msvcrtXX.dll dependencies
+    for the wxWidgets dll's. These errors can be ignored. The libraries link only
+    against the known msvcrt.dll and require no additional MSVCRTXX runtimes.
+    
+    Windows 2000
+    
+    Your distributed applications can run on Windows 2000, but you will have to include
+    the redistributable gdiplus.dll from Microsoft. Search MSDN for
+    'gdiplus redistributable'.
+    Once downloaded and extracted, you can simply bind the gdiplus.dll to your
+    PerlApp executable.
+    
 =head1 For PerlApp on Linux
 
     if you are using the PPMs from http://www.wxperl.co.uk/repository ( add this
@@ -178,9 +199,6 @@ Version 0.22
 
     The Wx distribution available as a PPM from http://www.wxperl.co.uk/repository ( add this
     to your repository list), can be packaged using PerlApp and Perl510
-    
-    For MacOSX, Wx::Perl::Packager is not needed, but will give a warning or two if your
-    environment is incorrectly set.
     
     For PerlApp packaging and testing, you must set the DYLD_LIBRARY_PATH to the wxWidgets
     dylib files before running PerlApp. If you have installed PPMS and the PDK in default
@@ -209,8 +227,12 @@ Version 0.22
     your PerlApp application may cause error dialogs on exit ("Application Quit Unexpectedly")
     
     You can fix this by binding the Wx.bundle file as wxmain.bundle. That is, bind
-    pathtoyourppminstall/site/lib/auto/Wx/Wx.bundle as
+    pathtoyourppminstall/site/lib/auto/Wx/Wx.bundle
+       as
     wxmain.bundle
+    
+    You may wish to apply this fix to all your .app packages.
+    
 
 =head1 PerlApp General
 
@@ -219,25 +241,24 @@ Version 0.22
     Wx::Perl::Packager does not support the --clean option for PerlApp
     
     Wx::Perl::Packager works with PerlApp by moving the following bound or included
-    wxWidgets files to a separate temp directory on MSWin and Linux.
+    wxWidgets files to a separate temp directory on MSWin and Linux (and Mac OSX
+    for wxmain.dylib).
     
     base
     core
     adv
-    mingwm10.dll if present
+    mingwm10.dll if present for 32 bit executables
+    libgcc_s_sjlj-1.dll if present for 64 bit executables
     gdiplus.dll if needed by OS.
-    wxmain.so (required on linux)
+    wxmain.(dll|so.0|dylib)
     
     The name of the directory is created using the logged in username, and the full path
     of the executable. This ensures that your application gets the correct Wx dlls whilst
     also ensuring that only one permanent temp directory is ever created for a unique set
     of wxWidgets DLLs
     
-    All the wxWidgets dlls and mingwm10.dll should be bound as 'dllname.dll'.
+    All the wxWidgets dlls,  mingwm10.dll and /or libgcc_s_sjlj-1.dll should be bound as 'dllname.dll'.
     (i.e. not in subdirectories)
-    
-    The wxpdk utility takes care of this for you for PDK versions less than 8.x
-    For PDK versions 8 and above, wxpdk should not be used.
 
 =head1 For PAR
 
