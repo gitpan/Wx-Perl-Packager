@@ -13,7 +13,7 @@ use warnings;
 require Wx::Perl::Packager::Base;
 use base qw(  Wx::Perl::Packager::Base );
 
-our $VERSION = '0.23';
+our $VERSION = '0.24';
 
 sub new {
     my $class = shift;

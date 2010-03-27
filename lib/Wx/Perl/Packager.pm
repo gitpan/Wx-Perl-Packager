@@ -14,7 +14,7 @@ use strict;
 use warnings;
 require Exporter;
 use base qw( Exporter );
-our $VERSION = '0.23';
+our $VERSION = '0.24';
 use Wx::Mini;
 
 our $_require_overwite = 0;

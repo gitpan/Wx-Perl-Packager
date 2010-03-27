@@ -15,7 +15,7 @@ use base qw(  Wx::Perl::Packager::Base );
 use Win32;
 use Win32::File;
 
-our $VERSION = '0.23';
+our $VERSION = '0.24';
 
 sub new {
     my $class = shift;

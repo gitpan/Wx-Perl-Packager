@@ -11,7 +11,7 @@
 package Wx::Perl::Packager::Mini;
 use Carp;
 
-our $VERSION = '0.23';
+our $VERSION = '0.24';
 
 #########################################################################################
 
@@ -38,7 +38,7 @@ sub _start {
 
 package Wx::Perl::Packager::Mini::XSLoader;
 
-our $VERSION = '0.23';
+our $VERSION = '0.24';
 
 sub loadwx {
     

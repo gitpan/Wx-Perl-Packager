@@ -17,7 +17,7 @@ use base qw( Class::Accessor );
 use File::Copy;
 use Digest::MD5;
 
-our $VERSION = '0.23';
+our $VERSION = '0.24';
 
 #-------------------------------------
 # Accessors
@@ -95,6 +95,7 @@ sub debug_print {
 }
 
 sub get_core_modules { (qw( base core adv )) }
+sub is_missing_fatal { ( $_[1] =~ /^(base|core|adv)$/ ) ? 1 : 0; } # not always same list as get_core_modules
 
 sub configure {
     my ($self, $requireoverwrite) = @_;
@@ -167,7 +168,7 @@ sub config_modules {
                 { filename => $Wx::dlls->{$modulekey} . $modulesuffix,
                   loaded => 0,
                   libref => undef,
-                  missing_fatal => ( $modulekey =~ /^(base|core|adv)$/ ) ? 1 : 0,
+                  missing_fatal => $self->is_missing_fatal($modulekey),
                 };
             }
     }
@@ -351,8 +352,6 @@ sub config_environment {
         my $loadpath = join('/', @ldpath);
         $self->set_app_extract_path($loadpath);
         $self->set_wx_load_path($loadpath);
-        my $currentsuffix = $self->get_so_module_suffix;
-        $self->set_so_module_suffix('.0') if not defined($currentsuffix);
     }
 }
 
@@ -447,6 +446,7 @@ sub do_core_load {
             $self->debug_print(qq(Loading Core Module  $dll  from $filepath) );
             my $libref = DynaLoader::dl_load_file($filepath, 0) or die qq(Failed to load $filepath);
             $module->{libref} = $libref;
+            $module->{loaded} = 1;
             push(@DynaLoader::dl_librefs,$libref) if $libref;
         }
         $self->set_core_loaded(1);

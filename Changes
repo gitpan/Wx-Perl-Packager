@@ -1,5 +1,8 @@
 Revision history for Wx-Perl-Packager
 
+0.24    2010-03-27 00:00
+        Fixed Wx::XRC loading bug
+
 0.23    2010-03-16 00:00
         Fixes for MSWin32 64 bit Wx builds
         Better unique keys for wx temp path
