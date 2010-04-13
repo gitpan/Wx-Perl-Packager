@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager.pm
 # Description:    Assist packaging wxPerl applicatons
-# File Revision:  $Id: Packager.pm 45 2010-03-16 12:35:51Z  $
+# File Revision:  $Id: Packager.pm 46 2010-03-27 01:24:00Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -14,7 +14,7 @@ use strict;
 use warnings;
 require Exporter;
 use base qw( Exporter );
-our $VERSION = '0.24';
+our $VERSION = '0.25';
 use Wx::Mini;
 
 our $_require_overwite = 0;
@@ -124,7 +124,7 @@ Wx::Perl::Packager
 
 =head1 VERSION
 
-Version 0.23
+Version 0.25
 
 =head1 SYNOPSIS
 

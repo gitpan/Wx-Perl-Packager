@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager/MacOSX.pm
 # Description:    module for MacOSX specific handlers
-# File Revision:  $Id: MacOSX.pm 44 2010-03-16 09:16:31Z  $
+# File Revision:  $Id: MacOSX.pm 46 2010-03-27 01:24:00Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -13,7 +13,7 @@ use warnings;
 require Wx::Perl::Packager::Base;
 use base qw(  Wx::Perl::Packager::Base );
 
-our $VERSION = '0.24';
+our $VERSION = '0.25';
 
 sub new {
     my $class = shift;
@@ -90,6 +90,21 @@ sub config_system {
 sub prepare_pdkcheck {
     my $self = shift;
     die qq(You must set DYLD_LIBRARY_PATH to include the path to wxWidgets dlls before running PerlApp) if not exists($ENV{DYLD_LIBRARY_PATH});
+    # set PDK Check EXIT to correct value for OSX 10.4 ( osx v 8)
+    my $osxver = $self->get_osx_major_version;
+    if($osxver == 8) {
+        $self->set_pdkcheck_exit(1);
+    }
 }
+
+sub get_osx_major_version {
+   my $verstr =  `uname -r`;
+   if( $verstr =~ /^(\d+)/ ) {
+       return $1;
+   } else {
+       die qq(Could not determine OSX version number);
+   }
+}
+
 
 1;

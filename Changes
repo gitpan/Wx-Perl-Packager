@@ -1,5 +1,8 @@
 Revision history for Wx-Perl-Packager
 
+0.25    2010-04-13 00:00
+        Fixed for MacOSX 10.4
+
 0.24    2010-03-27 00:00
         Fixed Wx::XRC loading bug
 

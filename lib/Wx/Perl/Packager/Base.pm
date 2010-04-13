@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager/Base.pm
 # Description:    base module for OS specific handlers
-# File Revision:  $Id: Base.pm 45 2010-03-16 12:35:51Z  $
+# File Revision:  $Id: Base.pm 46 2010-03-27 01:24:00Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -17,7 +17,7 @@ use base qw( Class::Accessor );
 use File::Copy;
 use Digest::MD5;
 
-our $VERSION = '0.24';
+our $VERSION = '0.25';
 
 #-------------------------------------
 # Accessors

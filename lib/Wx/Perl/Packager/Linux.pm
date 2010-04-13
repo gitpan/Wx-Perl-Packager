@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager/Linux.pm
 # Description:    module for Linux specific handlers
-# File Revision:  $Id: Linux.pm 44 2010-03-16 09:16:31Z  $
+# File Revision:  $Id: Linux.pm 46 2010-03-27 01:24:00Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -13,7 +13,7 @@ use warnings;
 require Wx::Perl::Packager::Base;
 use base qw(  Wx::Perl::Packager::Base );
 
-our $VERSION = '0.24';
+our $VERSION = '0.25';
 
 sub new {
     my $class = shift;

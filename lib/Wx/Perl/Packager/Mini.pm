@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager/Mini.pm
 # Description:    Overload Wx startup
-# File Revision:  $Id: Mini.pm 44 2010-03-16 09:16:31Z  $
+# File Revision:  $Id: Mini.pm 46 2010-03-27 01:24:00Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -11,7 +11,7 @@
 package Wx::Perl::Packager::Mini;
 use Carp;
 
-our $VERSION = '0.24';
+our $VERSION = '0.25';
 
 #########################################################################################
 
@@ -38,7 +38,7 @@ sub _start {
 
 package Wx::Perl::Packager::Mini::XSLoader;
 
-our $VERSION = '0.24';
+our $VERSION = '0.25';
 
 sub loadwx {
     
@@ -84,8 +84,5 @@ sub loadwx {
     return &$xs(@_);
 
 }
-
-
-
 
 1;
