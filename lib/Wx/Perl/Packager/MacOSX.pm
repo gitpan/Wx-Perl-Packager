@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager/MacOSX.pm
 # Description:    module for MacOSX specific handlers
-# File Revision:  $Id: MacOSX.pm 46 2010-03-27 01:24:00Z  $
+# File Revision:  $Id: MacOSX.pm 47 2010-04-13 02:22:49Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -13,7 +13,7 @@ use warnings;
 require Wx::Perl::Packager::Base;
 use base qw(  Wx::Perl::Packager::Base );
 
-our $VERSION = '0.25';
+our $VERSION = '0.26';
 
 sub new {
     my $class = shift;

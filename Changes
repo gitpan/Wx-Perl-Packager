@@ -1,5 +1,10 @@
 Revision history for Wx-Perl-Packager
 
+0.26    2010-04-15 00:00
+        POD changes only for MacOSX
+        wxpar improved handling for Linux binary names and improved POD
+        wxpar now picks up runtime library for mingw-w64 built binaries
+
 0.25    2010-04-13 00:00
         Fixed for MacOSX 10.4
 
