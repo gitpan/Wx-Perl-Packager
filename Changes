@@ -1,5 +1,8 @@
 Revision history for Wx-Perl-Packager
 
+0.27    2010-09-16 00:00
+        Essential bug-fix for wx relocation in PerlApp
+
 0.26    2010-04-15 00:00
         POD changes only for MacOSX
         wxpar improved handling for Linux binary names and improved POD

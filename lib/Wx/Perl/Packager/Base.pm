@@ -2,7 +2,7 @@
 # Distribution    Wx::Perl::Packager
 # File            Wx/Perl/Packager/Base.pm
 # Description:    base module for OS specific handlers
-# File Revision:  $Id: Base.pm 47 2010-04-13 02:22:49Z  $
+# File Revision:  $Id: Base.pm 48 2010-04-25 00:26:34Z  $
 # License:        This program is free software; you can redistribute it and/or
 #                 modify it under the same terms as Perl itself
 # Copyright:      Copyright (c) 2006 - 2010 Mark Dootson
@@ -17,7 +17,7 @@ use base qw( Class::Accessor );
 use File::Copy;
 use Digest::MD5;
 
-our $VERSION = '0.26';
+our $VERSION = '0.27';
 
 #-------------------------------------
 # Accessors
@@ -393,7 +393,7 @@ sub relocate_wx {
 
     for my $dllkey ( @core, 'wx' ) { 
         next if !$self->module_exists($dllkey);
-        next if(($dllkey eq 'Wx') && (!$self->get_relocate_wx_main));
+        next if(($dllkey eq 'wx') && (!$self->get_relocate_wx_main));
         my $modulefile = $self->get_module_filename($dllkey);
         my $targetmodulepath = qq($targetpath/$modulefile);
         my $sourcemodulepath = qq($sourcepath/$modulefile);
@@ -666,10 +666,21 @@ sub config_relocate_path {
         my $ctx = Digest::MD5->new;
         my $exec = PerlApp::exe();
         $ctx->add( $exec  );
-        my $statfile = $appextractpath . '/' . $self->get_basemodule();
-        $self->debug_print(qq(Base Core extracted module = $statfile));
-        my $filestat = (-f $statfile ) ? (stat($statfile))[7]: 'fixed data';
+        my $basestatfile = $appextractpath . '/' . $self->get_basemodule();
+        $self->debug_print(qq(Base Core extracted module = $basestatfile));
+        my $filestat = (-f $basestatfile ) ? (stat($basestatfile))[7]: 'fixed data';
         $ctx->add( $filestat );
+        
+        if($self->get_relocate_wx_main) {
+            # we also relocate wxmain - which means we have to add that to uniqueness
+            if( my $wxmain = $self->get_module_filename('wx') ) {
+                my $mainstatfile = $appextractpath . '/' . $wxmain;
+                $self->debug_print(qq(Wx Main extracted module = $mainstatfile));
+                my $mainfilestat = (-f $mainstatfile ) ? (stat($mainstatfile))[7]: 'wxmain data';
+                $ctx->add( $mainfilestat );
+            }
+        }
+        
         $apprelocatedir = $ctx->hexdigest;
         
     }   elsif( $runtime eq 'PDKCHECK' ) {
